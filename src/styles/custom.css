@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+@import '@astrojs/starlight-tailwind';
+
+/* Starlight custom theme — indigo-blue, trust-oriented */
+
+@theme {
+  /* Brand accent */
+  --color-accent-600: #4263eb;
+  --color-accent-200: #bac8ff;
+  --color-accent-900: #1a1f3d;
+
+  /* Gray scale */
+  --color-gray-100: #f1f4f9;
+  --color-gray-200: #e8ecf4;
+  --color-gray-300: #c1c8d9;
+  --color-gray-400: #8b95a9;
+  --color-gray-500: #556077;
+  --color-gray-700: #3a4254;
+  --color-gray-800: #272d3d;
+  --color-gray-900: #181c2a;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* Code block styling */
+.expressive-code pre {
+  border-radius: 0.5rem;
+}

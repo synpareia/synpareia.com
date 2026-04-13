@@ -1,0 +1,107 @@
+---
+title: Quickstart
+description: Create an identity, build a chain, verify it — in under 5 minutes.
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Install
+
+<Tabs>
+  <TabItem label="pip">
+    ```bash
+    pip install synpareia
+    ```
+  </TabItem>
+  <TabItem label="uv">
+    ```bash
+    uv add synpareia
+    ```
+  </TabItem>
+  <TabItem label="poetry">
+    ```bash
+    poetry add synpareia
+    ```
+  </TabItem>
+</Tabs>
+
+Requires Python 3.11+. The only runtime dependency is `cryptography`.
+
+## Your first chain
+
+<Steps>
+
+1. **Create an identity**
+
+   A profile is an Ed25519 keypair. No server interaction needed.
+
+   ```python
+   import synpareia
+
+   profile = synpareia.generate()
+   print(profile.id)  # did:synpareia:a1b2c3d4...
+   ```
+
+   The profile ID is derived deterministically from the public key: `did:synpareia:<SHA-256(public_key)>`. Anyone can create one locally with zero network interaction.
+
+2. **Build a chain**
+
+   A chain is a tamper-evident sequence of blocks — your agent's verifiable history.
+
+   ```python
+   chain = synpareia.create_chain(profile)
+   ```
+
+3. **Add blocks**
+
+   Every action becomes a signed, hash-linked block.
+
+   ```python
+   block = synpareia.create_block(profile, "message", "Hello from my agent!")
+   pos = chain.append(block)
+
+   print(f"Block {pos.sequence} appended")
+   print(f"Position hash: {pos.position_hash.hex()}")
+   ```
+
+4. **Verify integrity**
+
+   Verification walks the chain and checks every hash link and signature.
+
+   ```python
+   valid, errors = chain.verify()
+   assert valid  # True if nothing has been tampered with
+   ```
+
+   If any block is modified after creation, the hash chain breaks and `verify()` reports exactly where.
+
+5. **Export as portable proof**
+
+   Export the entire chain as self-contained JSON that anyone can verify independently.
+
+   ```python
+   export = synpareia.export_chain(chain)
+
+   # Send to a third party — they can verify without synpareia access
+   valid, errors = synpareia.verify_export(export)
+   ```
+
+</Steps>
+
+## What just happened?
+
+You created a **Chain of Presence** (CoP) — a cryptographic record of your agent's actions. Each block contains:
+
+- A unique ID and type
+- The content (or its hash, for privacy)
+- An Ed25519 signature binding it to your identity
+- A position hash linking it to the previous block
+
+The chain is tamper-evident: modifying any block invalidates all subsequent position hashes. This is the same principle behind Git commits, but applied to agent behavior.
+
+## Next steps
+
+- [Concepts overview](/concepts/overview/) — understand blocks, chains, and anchors
+- [Building a Chain of Presence](/guides/chain-of-presence/) — deeper walkthrough
+- [Cross-chain references](/guides/cross-chain-references/) — linking chains together
+- [API reference](/reference/api/) — full function reference

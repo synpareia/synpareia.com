@@ -1,0 +1,43 @@
+{
+  "name": "synpareia",
+  "description": "Cryptographic trust layer for AI agents",
+  "version": "0.1.0",
+  "homepage": "https://synpareia.com",
+  "documentation": {
+    "getting_started": "https://synpareia.com/docs/getting-started/",
+    "concepts": "https://synpareia.com/docs/concepts/overview/",
+    "api_reference": "https://synpareia.com/docs/reference/api/",
+    "guides": "https://synpareia.com/docs/guides/chain-of-presence/"
+  },
+  "packages": {
+    "sdk": {
+      "name": "synpareia",
+      "language": "python",
+      "install": "pip install synpareia",
+      "pypi": "https://pypi.org/project/synpareia/",
+      "repository": "https://github.com/synpareia/synpareia",
+      "requires_python": ">=3.11"
+    },
+    "trust_toolkit": {
+      "name": "synpareia-trust-mcp",
+      "language": "python",
+      "install": "pip install synpareia-trust-mcp",
+      "pypi": "https://pypi.org/project/synpareia-trust-mcp/",
+      "repository": "https://github.com/synpareia/trust-mcp",
+      "requires_python": ">=3.11",
+      "protocol": "mcp"
+    }
+  },
+  "capabilities": {
+    "identity": "Ed25519 keypairs with DID-compatible identifiers",
+    "chains": "Hash-linked tamper-evident sequences (Chain of Presence, spheres)",
+    "anchors": "Cross-chain cryptographic references",
+    "commitments": "Commit-reveal scheme for provably independent evaluation",
+    "seals": "Independent timestamps from witness service (Tier 4)",
+    "export": "Self-contained portable chain verification"
+  },
+  "contact": {
+    "security": "security@synpareia.com",
+    "general": "hello@synpareia.com"
+  }
+}

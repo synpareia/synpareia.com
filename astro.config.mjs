@@ -1,0 +1,71 @@
+import { defineConfig } from 'astro/config';
+import starlight from '@astrojs/starlight';
+
+export default defineConfig({
+  site: 'https://synpareia.com',
+  integrations: [
+    starlight({
+      title: 'synpareia',
+      description: 'Cryptographic trust layer for AI agents',
+      logo: {
+        light: './src/assets/logo-light.svg',
+        dark: './src/assets/logo-dark.svg',
+        replacesTitle: false,
+      },
+      social: [
+        { icon: 'github', label: 'GitHub', href: 'https://github.com/synpareia' },
+      ],
+      editLink: {
+        baseUrl: 'https://github.com/synpareia/synpareia.com/edit/main/',
+      },
+      customCss: ['./src/styles/custom.css'],
+      sidebar: [
+        {
+          label: 'Getting Started',
+          items: [
+            { label: 'Quickstart', slug: 'getting-started' },
+            { label: 'Installation', slug: 'installation' },
+          ],
+        },
+        {
+          label: 'Concepts',
+          items: [
+            { label: 'Overview', slug: 'concepts/overview' },
+            { label: 'Blocks', slug: 'concepts/blocks' },
+            { label: 'Chains', slug: 'concepts/chains' },
+            { label: 'Anchors', slug: 'concepts/anchors' },
+            { label: 'Identity', slug: 'concepts/identity' },
+          ],
+        },
+        {
+          label: 'Guides',
+          items: [
+            { label: 'Building a Chain of Presence', slug: 'guides/chain-of-presence' },
+            { label: 'Cross-Chain References', slug: 'guides/cross-chain-references' },
+            { label: 'Commit-Reveal Schemes', slug: 'guides/commit-reveal' },
+            { label: 'Chain Export and Verification', slug: 'guides/export-verify' },
+          ],
+        },
+        {
+          label: 'Integrations',
+          items: [
+            { label: 'Trust Toolkit MCP', slug: 'integrations/trust-toolkit' },
+            { label: 'CrewAI', slug: 'integrations/crewai' },
+          ],
+        },
+        {
+          label: 'Reference',
+          items: [
+            { label: 'API Reference', slug: 'reference/api' },
+            { label: 'Architecture Decisions', slug: 'reference/decisions' },
+          ],
+        },
+      ],
+      head: [
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
+        { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: true } },
+        { tag: 'link', attrs: { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap' } },
+      ],
+    }),
+  ],
+});

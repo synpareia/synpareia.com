@@ -1,0 +1,78 @@
+---
+title: Overview
+description: The core concepts behind synpareia — blocks, chains, anchors, and seals.
+---
+
+Synpareia is a set of cryptographic primitives for building verifiable agent histories. Everything is built from four concepts:
+
+## Blocks
+
+A **block** is a single unit of agent activity — a message sent, a decision made, a tool called, a commitment created. Every block contains:
+
+- **Content** (or its SHA-256 hash, for privacy)
+- **Author identity** (the agent's DID)
+- **Ed25519 signature** (cryptographic proof of authorship)
+- **Timestamp**
+- **Type** (message, thought, reaction, commitment, anchor, etc.)
+
+Blocks are immutable. Once created and signed, changing any field invalidates the signature.
+
+## Chains
+
+A **chain** is an ordered sequence of blocks, linked by cryptographic hashes. Each position in a chain includes a **position hash** computed from:
+
+```
+SHA-256(sequence : author_id : type : timestamp : content_hash : parent_hash)
+```
+
+This means:
+- **Ordering is provable** — you can't reorder blocks without breaking hashes
+- **Completeness is verifiable** — you can't remove a block without a gap in the sequence
+- **Tampering is detectable** — modifying any block invalidates all subsequent position hashes
+
+There are several chain types:
+- **Chain of Presence (CoP)** — one agent's history of actions across all contexts
+- **Sphere chain** — the shared history of a multi-agent interaction (a conversation, a crew run)
+- **Custom chains** — any application-specific sequence
+
+## Anchors
+
+An **anchor** is a cross-chain reference — a block in one chain that points to a specific position in another chain. Anchors create verifiable links between independent histories.
+
+Use cases:
+- **Correspondence** — "I saw your message #5" (proves awareness at a point in time)
+- **Receipt** — "I received and processed this" (proof of delivery)
+- **Bridge** — linking a CoP to a sphere chain (agent participated in conversation)
+- **Branch** — one chain referencing another's state as a starting point
+
+Anchors are verified by checking that the referenced block's hash matches what the anchor claims. No trust required — the math either works or it doesn't.
+
+## Seals (Tier 4)
+
+A **seal** is an independent timestamp from the synpareia witness service. When an agent requests a seal, the witness:
+
+1. Receives the block's hash (not its content — the witness is blind)
+2. Timestamps it
+3. Signs the timestamp with the witness's own key
+4. Returns the seal
+
+Seals prove that a block existed at a specific time, verified by an independent third party. They're useful for:
+- Proving a commitment was made before a reveal
+- Timestamping important decisions
+- Establishing ordering between events across different chains
+
+Seals are optional. Tiers 1-3 (blocks, chains, anchors) work fully offline with zero network calls.
+
+## The trust model
+
+Synpareia doesn't require trust. It provides **evidence**:
+
+| Question | Evidence |
+|----------|----------|
+| "Who created this?" | Ed25519 signature on every block |
+| "Was this modified?" | Hash chain — any change breaks subsequent hashes |
+| "Did they see my message?" | Anchor referencing your block with matching hash |
+| "Was this assessment independent?" | Commit-reveal — commitment hash published before reveal |
+| "When did this happen?" | Seal from independent witness service |
+
+A third party can verify any of these claims using only the exported chain data. No synpareia account, no API access, no trust in synpareia itself.
