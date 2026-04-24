@@ -1,0 +1,86 @@
+{
+  "$schema": "https://synpareia.com/schemas/agent-skills.json",
+  "site": "https://synpareia.com",
+  "description": "Skills that AI agents can use with synpareia. Install the Trust Toolkit MCP (`pip install synpareia-trust-mcp`) for direct access.",
+  "skills": [
+    {
+      "id": "agent-identity",
+      "name": "Create verifiable agent identity",
+      "description": "Generate an Ed25519 keypair + DID. No registration, no central authority. Works fully offline.",
+      "how_to_invoke": {
+        "via_mcp": "synpareia-trust-mcp → tools: orient, make_claim, verify_claim",
+        "via_sdk": "pip install synpareia — synpareia.generate()"
+      },
+      "documentation": "https://synpareia.com/concepts/identity/"
+    },
+    {
+      "id": "tamper-evident-recording",
+      "name": "Record an agent interaction tamper-evidently",
+      "description": "Capture a sequence of agent actions as a hash-linked chain. Any tampering is detectable. Export as self-contained JSON for third-party verification.",
+      "how_to_invoke": {
+        "via_mcp": "synpareia-trust-mcp → tools: record_interaction, add_to_recording, end_recording, get_proof",
+        "via_sdk": "synpareia.create_chain, synpareia.create_block, chain.append, synpareia.export_chain"
+      },
+      "documentation": "https://synpareia.com/guides/chain-of-presence/"
+    },
+    {
+      "id": "commit-reveal-independence",
+      "name": "Prove independent evaluation via commit-reveal",
+      "description": "Seal an assessment before seeing others' so independence is cryptographically provable. Useful for multi-agent evaluation without anchoring bias.",
+      "how_to_invoke": {
+        "via_mcp": "synpareia-trust-mcp → tools: prove_independence",
+        "via_sdk": "synpareia.commit, synpareia.reveal"
+      },
+      "documentation": "https://synpareia.com/guides/commit-reveal/"
+    },
+    {
+      "id": "cross-chain-anchors",
+      "name": "Anchor between agent chains",
+      "description": "Create cryptographic proof that agent A saw block N of agent B's chain at a specific time. Mutual attestation without trusting either party.",
+      "how_to_invoke": {
+        "via_sdk": "synpareia.create_anchor_block"
+      },
+      "documentation": "https://synpareia.com/guides/cross-chain-references/"
+    },
+    {
+      "id": "trust-evaluation",
+      "name": "Evaluate another agent's trust signals",
+      "description": "Given another agent's identifier, summarize their chain, anchors, seals, and signed claims into a trust picture.",
+      "how_to_invoke": {
+        "via_mcp": "synpareia-trust-mcp → tools: evaluate_agent"
+      },
+      "documentation": "https://synpareia.com/integrations/trust-toolkit/"
+    },
+    {
+      "id": "witness-timestamp-seal",
+      "name": "Independent timestamp seal",
+      "description": "Get an independent witness to seal 'this hash existed at this time' without revealing the underlying content.",
+      "how_to_invoke": {
+        "via_mcp": "synpareia-trust-mcp → tools: get_witness_info, request_timestamp_seal, verify_seal_offline"
+      },
+      "documentation": "https://synpareia.com/concepts/overview/"
+    },
+    {
+      "id": "witness-blind-conclusion",
+      "name": "Blind conclusion via witness",
+      "description": "Submit a commitment to a conclusion the witness cannot read; reveal later. Witness provides ordering without content access.",
+      "how_to_invoke": {
+        "via_mcp": "synpareia-trust-mcp → tools: submit_blind_conclusion, get_blind_conclusion"
+      }
+    },
+    {
+      "id": "verify-exported-chain",
+      "name": "Verify a portable chain export",
+      "description": "Given a self-contained synpareia chain export (JSON), verify it offline with no external service dependency.",
+      "how_to_invoke": {
+        "via_sdk": "synpareia.verify_export"
+      },
+      "documentation": "https://synpareia.com/guides/export-verify/"
+    }
+  ],
+  "related": {
+    "mcp_server_card": "https://synpareia.com/.well-known/mcp/server-card.json",
+    "api_catalog": "https://synpareia.com/.well-known/api-catalog",
+    "llms_txt": "https://synpareia.com/llms.txt"
+  }
+}

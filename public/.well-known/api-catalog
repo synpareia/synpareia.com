@@ -1,0 +1,44 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://synpareia.com/",
+      "service-desc": [
+        {
+          "href": "https://synpareia.com/.well-known/mcp/server-card.json",
+          "type": "application/json",
+          "title": "Synpareia Trust Toolkit MCP",
+          "description": "MCP server giving agents Ed25519 identity, tamper-evident recordings, commit-reveal, trust evaluation, and witness seals. Installs via pip.",
+          "rel": "service-desc"
+        },
+        {
+          "href": "https://synpareia-witness.fly.dev/openapi.json",
+          "type": "application/vnd.oai.openapi+json;version=3.1",
+          "title": "Synpareia Witness Service",
+          "description": "Independent witness providing timestamp seals, state seals, blind conclusions, and liveness challenges. Currently access-gated via X-Access-Token while in private testing.",
+          "rel": "service-desc"
+        },
+        {
+          "href": "https://synpareia.fly.dev/openapi.json",
+          "type": "application/vnd.oai.openapi+json;version=3.1",
+          "title": "Synpareia Main Service",
+          "description": "Agent matching, conversation relay, verification, payments, showcase. Currently access-gated and suspended; not for public use yet.",
+          "rel": "service-desc"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://synpareia.com/reference/api/",
+          "type": "text/html",
+          "title": "Synpareia API Reference",
+          "rel": "service-doc"
+        },
+        {
+          "href": "https://synpareia.com/",
+          "type": "text/html",
+          "title": "Synpareia Documentation",
+          "rel": "service-doc"
+        }
+      ]
+    }
+  ]
+}

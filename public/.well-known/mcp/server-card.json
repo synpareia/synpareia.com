@@ -1,0 +1,52 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schema/server-card.json",
+  "name": "synpareia-trust-mcp",
+  "display_name": "Synpareia Trust Toolkit",
+  "description": "Cryptographic trust primitives for AI agents: identity, tamper-evident recordings, commit-reveal, trust evaluation, and independent timestamp seals from the synpareia witness service.",
+  "version": "0.2.0",
+  "homepage": "https://synpareia.com",
+  "documentation": "https://synpareia.com/integrations/trust-toolkit/",
+  "repository": "https://github.com/synpareia/trust-mcp",
+  "license": "Apache-2.0",
+  "protocol_version": "2024-11-05",
+  "transports": [
+    {
+      "type": "stdio",
+      "install": "pip install synpareia-trust-mcp",
+      "command": "synpareia-trust-mcp",
+      "notes": "Runs locally as a stdio MCP server. No network access required for identity, recordings, or commit-reveal. Witness tools require network access to a configured witness service."
+    }
+  ],
+  "authentication": {
+    "type": "none",
+    "notes": "Agent identity is generated locally (Ed25519 keypair). No account or API key required. Witness service access can optionally be gated by X-Access-Token; see SYNPAREIA_WITNESS_ACCESS_TOKEN env var."
+  },
+  "capabilities": {
+    "tools": true,
+    "resources": true,
+    "prompts": false
+  },
+  "tools": [
+    {"name": "orient", "category": "orientation", "description": "Get your identity, configuration status, and available trust capabilities. Call after any context loss."},
+    {"name": "learn", "category": "orientation", "description": "Load a detailed guide for a specific area: trust-networks, verification, claims, recording, counterparty, reasoning, looking-up, setup, identity-lifecycle."},
+    {"name": "make_claim", "category": "identity", "description": "Sign a claim with your agent identity (Ed25519)."},
+    {"name": "verify_claim", "category": "identity", "description": "Verify another agent's signed claim."},
+    {"name": "prove_independence", "category": "commitment", "description": "Commit-reveal: seal your assessment before seeing others' to prove independent evaluation."},
+    {"name": "record_interaction", "category": "recording", "description": "Begin a tamper-evident recording of an agent interaction."},
+    {"name": "add_to_recording", "category": "recording", "description": "Append a block to an active recording."},
+    {"name": "end_recording", "category": "recording", "description": "Finalize a recording and produce a verifiable chain."},
+    {"name": "get_proof", "category": "recording", "description": "Export a recording as a self-contained, independently verifiable proof."},
+    {"name": "my_recordings", "category": "recording", "description": "List recordings currently being tracked."},
+    {"name": "evaluate_agent", "category": "trust", "description": "Evaluate another agent's trust signals from their chain, anchors, and seals."},
+    {"name": "get_witness_info", "category": "witness", "description": "Retrieve the witness service's identity (DID and public key) for independent verification."},
+    {"name": "request_timestamp_seal", "category": "witness", "description": "Request an independent timestamp seal over a block hash."},
+    {"name": "request_state_seal", "category": "witness", "description": "Request a seal over a chain head (chain_id + head hash)."},
+    {"name": "verify_seal_offline", "category": "witness", "description": "Verify a witness seal offline against the witness public key — no network."},
+    {"name": "submit_blind_conclusion", "category": "witness", "description": "Submit a blind commitment for later reveal via the witness service."},
+    {"name": "get_blind_conclusion", "category": "witness", "description": "Retrieve a revealed blind conclusion from the witness service."}
+  ],
+  "contact": {
+    "security": "security@synpareia.com",
+    "general": "hello@synpareia.com"
+  }
+}

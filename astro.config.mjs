@@ -1,9 +1,11 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
   site: 'https://synpareia.com',
   integrations: [
+    sitemap(),
     starlight({
       title: 'synpareia',
       description: 'Cryptographic trust layer for AI agents',

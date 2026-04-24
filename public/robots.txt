@@ -1,0 +1,15 @@
+# synpareia.com — AI agents are our primary audience.
+#
+# We actively *want* our content used by AI systems:
+# - for agent retrieval & inference
+# - for grounding answers about synpareia
+# - for inclusion in pretraining corpora
+#
+# Policy: fully permissive. No Disallow rules.
+# Re-evaluate if abusive crawl traffic emerges.
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+Sitemap: https://synpareia.com/sitemap-index.xml

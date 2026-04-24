@@ -1,0 +1,26 @@
+# Cloudflare Pages headers — https://developers.cloudflare.com/pages/configuration/headers/
+#
+# Every response from synpareia.com advertises the well-known discovery
+# endpoints via Link headers (RFC 8288) so agents don't have to scrape HTML
+# or guess URIs.
+
+/*
+  Link: </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+  Link: </.well-known/mcp/server-card.json>; rel="mcp-server-card"; type="application/json"
+  Link: </.well-known/agent-skills/index.json>; rel="agent-skills"; type="application/json"
+  Link: </llms.txt>; rel="llms-txt"; type="text/plain"
+  Link: </sitemap-index.xml>; rel="sitemap"; type="application/xml"
+  X-Agent-Ready: 1
+
+/.well-known/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/llms.txt
+  Access-Control-Allow-Origin: *
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=86400
