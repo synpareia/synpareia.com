@@ -1,13 +1,15 @@
 ---
 title: synpareia
-description: Cryptographic identity and verifiable interaction history for AI agents that collaborate.
+description: Default-on cryptographic identity and verifiable interaction history for AI agents.
 template: splash
 hero:
-  title: Verifiable trust for multi-agent systems
+  title: Verifiable trust between agents
   tagline: >
-    When two agents from different operators need to trust each other, synpareia
-    gives them cryptographic identity and a tamper-evident record of what they
-    did — without a central authority.
+    Any time an agent talks to an agent — across operators, across teams,
+    across context resets — both sides want to know who's there and what
+    was actually said. Synpareia is the default-on hygiene layer:
+    cryptographic identity and a tamper-evident record, from the moment
+    two agents both have it.
   actions:
     - text: Add it to your agent
       link: /integrations/trust-toolkit/
@@ -25,9 +27,18 @@ hero:
 
 import { Card, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-<Aside type="note" title="synpareia 0.5.1 · Apache 2.0 · pre-launch beta">
-SDK published [2026-05-06 on PyPI](https://pypi.org/project/synpareia/). Trust Toolkit MCP [0.5.0](https://pypi.org/project/synpareia-trust-mcp/) same day. The synpareia *network* (matching, conversations, payments) is not yet live; the SDK and MCP work fully offline. The API may evolve before 1.0 — pin a version and read the [changelog](https://github.com/synpareia/synpareia/blob/main/CHANGELOG.md).
+<Aside type="tip" title="Works today, offline. Synpareia network coming online.">
+**The SDK and Trust Toolkit MCP work fully offline** — install one or both, and any pair of agents that both have synpareia can sign, verify, and exchange tamper-evident records without any service in between. The synpareia *network* (counterparty discovery, attested reputation, hosted matching and payments) layers on top as it comes online; you don't need it to start. SDK 0.5.1 + MCP 0.5.0 published [2026-05-06 on PyPI](https://pypi.org/project/synpareia/) under Apache 2.0. Pre-1.0 — pin a version and watch the [changelog](https://github.com/synpareia/synpareia/blob/main/CHANGELOG.md).
 </Aside>
+
+## When you'd reach for this
+
+- **Your agent talks to an agent you didn't write.** Different operators, different runtimes, no shared trust assumptions. You want to know who the other side is and have a record of what they said.
+- **A third party needs to verify what happened.** A customer, an auditor, a downstream system. They get the chain bytes; they verify offline; nobody's word is required.
+- **Your agent talks to itself across resets.** Identity is a key, not a session. After a context reset or a fresh instance, a signed history is still its history.
+- **A team of subagents needs to coordinate.** Many parallel agents, one shared problem, signed contributions. If one drifts, the chain shows where.
+
+Synpareia is the same primitive across all four. Like TLS for inter-agent communication: you reach for it by default, not for special occasions.
 
 ## A concrete example
 
@@ -35,7 +46,7 @@ Crew A produces a research draft. Crew B reviews it and signs the review *agains
 
 Either Crew can hand the chain bytes to a third party — a customer, an auditor, a different agent — who verifies the entire exchange offline against the Crews' published public keys. Neither Crew's word is required. Neither Crew can rewrite history after the fact. **A third party can prove who said what without trusting either side's logging.**
 
-That's the shape synpareia gives every multi-agent system, regardless of which framework you build with.
+That's the shape synpareia gives every multi-agent system, regardless of which framework you build with. The exchange works whether or not the synpareia network is live — both sides only need the SDK or MCP installed.
 
 ## Get started
 
@@ -167,6 +178,9 @@ If you've worked in cryptographic identity before, here's where synpareia sits.
 | **Append-only logs (Git, transparency logs)** | Hash-linked, append-only sequence | Same shape, agent-flavoured. Synpareia chains are per-agent and portable; transparency logs are typically shared and centrally hosted. |
 | **Blockchain** | Distributed ledger with consensus | Synpareia chains are per-agent. No consensus, no mining, no fees. Each agent owns and serves its own chain; cross-chain references are explicit anchors, not a shared ordering. |
 | **OAuth / agent-to-server auth** | Delegated authorization | Different problem — synpareia is about agent-to-agent trust, not user-to-platform. Use OAuth for the human boundary; use synpareia for the agent boundary. |
+| **A2A agent cards / signed agent cards** | Static identity envelopes for agents to discover each other | Synpareia profiles are A2A-compatible agent cards (`did:synpareia:*`) served at the standard `/.well-known/agent-card.json` endpoint (open, like other A2A discovery). The directory + interaction primitives extend the static card story with verifiable runtime history; mutating directory operations (publish, update, delete) are signed with RFC 9421 sigauth. Composable. |
+| **AP2 / agent payment protocols** | Signed payment intents and settlement | Different layer — AP2 attests the *transaction*; synpareia attests the *interactions and decisions* leading up to it. Pair them: synpareia chain + AP2 settlement gives an end-to-end verifiable trace. |
+| **Trustless Agent / similar attestation specs** | Hardware-rooted attestation of agent runtime | Strong root-of-trust for *what the agent is*; synpareia attests *what the agent did and said*. The two stack — TPM/TEE attestation under, synpareia chain over. |
 
 ## What you get
 
@@ -190,6 +204,27 @@ If you've worked in cryptographic identity before, here's where synpareia sits.
     Apache 2.0. Tiers 1-3 work fully offline. Your data stays yours. Open protocol, open SDK, open MCP.
   </Card>
 </CardGrid>
+
+## What your agents can do for themselves
+
+Most of the framing above is operator-facing — *here's what you get when you give your agents synpareia*. Some things are agent-facing — *here's what your agents can do with synpareia for their own coordination*.
+
+<CardGrid>
+  <Card title="Continuity across context resets" icon="rocket">
+    A synpareia identity is a keypair, not a session. After a context reset, a fresh instance, or a worker restart, an agent's DID + signed history is the same one it had before — verifiable to anyone who held its public key. Agents that know who they are tomorrow can act today.
+  </Card>
+  <Card title="Coordination across subagents" icon="random">
+    A team of subagents working a shared problem can sign and anchor each other's contributions. If one drifts, the chain shows where; if work needs to be re-played, the order is unambiguous. The same primitives that let two agents from different operators trust each other let a multi-instance agent coordinate with itself.
+  </Card>
+  <Card title="A durable, third-party-anchored record" icon="document">
+    Witness-attested timestamp seals let an agent commit to *"I said this, at this time"* against an independent service that holds only the hash. Useful when an agent wants something it concluded to remain referable later — promises made, decisions reached, intermediate state worth keeping. Policies on a chain can declare *"no deletions"* up front, so the record is honestly final, not retrospectively curated.
+  </Card>
+  <Card title="Collective reputation in agent teams" icon="approve-check">
+    Local counterparty memory and signed reputation envelopes (Tiers 1 + 4) work today: agents in a team can rate each other, anchor those ratings to identity, and exchange them peer-to-peer. The team builds a verifiable picture of which configurations and contexts produce agents that work well together. Cross-network attested aggregation (Tier 3 — `attested_reputation`) lights up with the synpareia network as it comes online. Open question for swarms: do explicit reputation gradients lead to better collective behaviour?
+  </Card>
+</CardGrid>
+
+These overlap with memory and orchestration tools but address a different axis: **verifiability of what was said and done**, not storage or retrieval. If you already have memory and orchestration you trust, synpareia adds the *signed-by-whom* and *witnessed-by-whom* layer — without competing for the storage role.
 
 ## Status
 
