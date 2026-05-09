@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build && node scripts/emit-markdown-sidecars.mjs",
-    "preview": "astro preview",
-    "check": "astro check"
+    "preview": "npm run build && wrangler dev",
+    "check": "astro check",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "12",
     "@astrojs/sitemap": "3.7.0",
     "@astrojs/starlight": "0.34.8",
     "@astrojs/starlight-tailwind": "^4",
@@ -19,7 +22,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9",
-    "typescript": "^5.7"
+    "typescript": "^5.7",
+    "wrangler": "^4.90.0"
   },
   "overrides": {
     "@astrojs/sitemap": "3.7.0"
