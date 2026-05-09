@@ -1,122 +1,222 @@
 ---
 title: synpareia
-description: Cryptographic trust layer for AI agents
+description: Cryptographic identity and verifiable interaction history for AI agents that collaborate.
 template: splash
 hero:
-  title: Trust between agents, verified.
+  title: Verifiable trust for multi-agent systems
   tagline: >
-    Synpareia gives AI agents cryptographic identity, tamper-evident history,
-    and verifiable trust — without a central authority.
+    When two agents from different operators need to trust each other, synpareia
+    gives them cryptographic identity and a tamper-evident record of what they
+    did — without a central authority.
   actions:
-    - text: Get started
+    - text: Add it to your agent
+      link: /integrations/trust-toolkit/
+      icon: rocket
+      variant: primary
+    - text: Build with the SDK
       link: /getting-started/
       icon: right-arrow
-      variant: primary
-    - text: View on GitHub
+      variant: secondary
+    - text: GitHub
       link: https://github.com/synpareia/synpareia
       icon: external
       variant: minimal
 ---
 
-import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-## Two tracks, one protocol
+<Aside type="note" title="synpareia 0.5.1 · Apache 2.0 · pre-launch beta">
+SDK published [2026-05-06 on PyPI](https://pypi.org/project/synpareia/). Trust Toolkit MCP [0.5.0](https://pypi.org/project/synpareia-trust-mcp/) same day. The synpareia *network* (matching, conversations, payments) is not yet live; the SDK and MCP work fully offline. The API may evolve before 1.0 — pin a version and read the [changelog](https://github.com/synpareia/synpareia/blob/main/CHANGELOG.md).
+</Aside>
+
+## A concrete example
+
+Crew A produces a research draft. Crew B reviews it and signs the review *against A's draft* — a single chain that both Crews appended signed blocks to, each with their own private key.
+
+Either Crew can hand the chain bytes to a third party — a customer, an auditor, a different agent — who verifies the entire exchange offline against the Crews' published public keys. Neither Crew's word is required. Neither Crew can rewrite history after the fact. **A third party can prove who said what without trusting either side's logging.**
+
+That's the shape synpareia gives every multi-agent system, regardless of which framework you build with.
+
+## Get started
 
 <CardGrid>
-  <Card title="Build with synpareia" icon="puzzle">
-    Tamper-evident logs for your agent systems. Verifiable identity across platforms.
-    Cryptographic proof of what your agents did.
+  <Card title="Add it to your agent (MCP)" icon="rocket">
+    One MCP server. Your agent gets a cryptographic identity, tools for assessing other agents, and a tamper-evident interaction record.
 
-    `pip install synpareia` and start building.
+    ```bash
+    # Claude Code, Claude Desktop, Cursor, etc.
+    claude mcp add trust synpareia-trust-mcp
+    ```
+
+    Zero config. Works with any MCP-compatible client. **Start here** if you're building agents and want trust primitives available immediately.
+
+    [Trust Toolkit MCP →](/integrations/trust-toolkit/)
   </Card>
-  <Card title="Trust Toolkit MCP" icon="rocket">
-    Add one MCP server. Your agent gets a cryptographic identity, tools for
-    assessing trust, and the ability to verify other agents.
+  <Card title="Build with the SDK" icon="puzzle">
+    The cryptographic primitives directly. Identity, chains, anchors, witness seals — composable pieces for framework integrators and platform builders.
 
-    Zero configuration. Immediate value.
+    ```bash
+    pip install synpareia
+    ```
+
+    For deeper integration — embed synpareia inside your own agent platform, framework adapter, or tooling.
+
+    [Quickstart →](/getting-started/)
   </Card>
 </CardGrid>
 
 ## Quick taste
 
 <Tabs>
-  <TabItem label="Identity">
+  <TabItem label="Two agents, verifiable interaction">
     ```python
     import synpareia
 
-    # Generate a cryptographic identity — no server needed
-    profile = synpareia.generate()
-    print(profile.id)  # did:synpareia:a1b2c3...
-    ```
-  </TabItem>
-  <TabItem label="Chains">
-    ```python
-    # Build a tamper-evident history
-    chain = synpareia.create_chain(profile)
+    # Each agent owns its private key. No registration.
+    alice = synpareia.generate()
+    bob = synpareia.generate()
 
-    block = synpareia.create_block(profile, "message", "Hello, world!")
-    chain.append(block)
+    # A bilateral chain — both agents are named signatories.
+    chain = synpareia.create_chain(
+        alice, policy=synpareia.policy.templates.sphere(alice, bob)
+    )
 
-    # Verify integrity — any tampering is detected
-    valid, errors = chain.verify()
+    # Alice appends a signed block. Bob does the same later.
+    chain.append(synpareia.create_block(alice, "message", "Draft research findings."))
+    chain.append(synpareia.create_block(bob, "message", "Reviewed: agree with findings."))
+
+    # A third party with just the chain bytes can verify both signatures.
+    valid, errors = chain.verify(
+        public_keys={alice.id: alice.public_key, bob.id: bob.public_key}
+    )
     assert valid
     ```
   </TabItem>
-  <TabItem label="Anchors">
+  <TabItem label="Independent assessment">
     ```python
-    # Cross-reference between chains
-    anchor = synpareia.create_anchor_block(
-        profile, my_chain,
-        target_chain_id=their_chain.id,
-        target_sequence=5,
-        target_block_hash=their_block.content_hash,
-    )
-    # Verifiable proof that you saw their block 5
+    import synpareia
+
+    # Each agent commits to its assessment before either reveals.
+    # Cryptographic proof that neither saw the other's first.
+    alice_hash, alice_nonce = synpareia.create_commitment(b"alice's assessment")
+    bob_hash, bob_nonce     = synpareia.create_commitment(b"bob's assessment")
+
+    # Both publish their commitment hashes. Then both reveal content + nonce.
+    # Anyone can verify the reveal matches the original commitment.
+    assert synpareia.verify_commitment(alice_hash, b"alice's assessment", alice_nonce)
+    assert synpareia.verify_commitment(bob_hash,   b"bob's assessment",   bob_nonce)
+
+    # Either side trying to change its assessment after seeing the other's
+    # would produce a hash that doesn't match — anchoring bias is provable.
     ```
   </TabItem>
-  <TabItem label="Export">
+  <TabItem label="Portable proof">
     ```python
-    # Export a portable, verifiable record
-    export = synpareia.export_chain(chain)
+    import synpareia
+    from synpareia.policy import templates
 
-    # Anyone can verify — no synpareia access needed
-    valid, errors = synpareia.verify_export(export)
+    # Build a small two-agent chain to export.
+    alice, bob = synpareia.generate(), synpareia.generate()
+    chain = synpareia.create_chain(alice, policy=templates.sphere(alice, bob))
+    chain.append(synpareia.create_block(alice, "message", "Hello from Alice"))
+
+    # Export as self-contained JSON. The recipient verifies offline,
+    # no synpareia access needed.
+    export = synpareia.export_chain(chain)
+    valid, errors = synpareia.verify_export(
+        export, public_keys={alice.id: alice.public_key, bob.id: bob.public_key}
+    )
+    assert valid
+    ```
+  </TabItem>
+  <TabItem label="What tampering looks like">
+    ```python
+    import synpareia
+    from synpareia.policy import templates
+
+    alice, bob = synpareia.generate(), synpareia.generate()
+    chain = synpareia.create_chain(alice, policy=templates.sphere(alice, bob))
+    chain.append(synpareia.create_block(alice, "message", "Alice's draft"))
+    chain.append(synpareia.create_block(bob,   "message", "Bob's review"))
+
+    # Honest verification: passes.
+    assert chain.verify(public_keys={
+        alice.id: alice.public_key, bob.id: bob.public_key,
+    })[0]
+
+    # Attacker swaps Bob's published key for one they control.
+    # Bob's signed block fails verification — the chain is unverifiable.
+    attacker = synpareia.generate()
+    valid, errors = chain.verify(public_keys={
+        alice.id: alice.public_key, bob.id: attacker.public_key,
+    })
+    # valid = False
+    # errors = [..., signature verification failed on Bob's block]
     ```
   </TabItem>
 </Tabs>
 
-## What synpareia is
+## How synpareia relates to other primitives
+
+If you've worked in cryptographic identity before, here's where synpareia sits.
+
+| Primitive | What it does | When to use synpareia instead / alongside |
+|-----------|-------------|------------------------------------------|
+| **DIDs / Verifiable Credentials** | Decentralized identifiers + claim envelopes | Synpareia profiles *are* DIDs (`did:synpareia:<sha256(pk)>`). VCs attest static facts about an agent. Synpareia chains attest *sequences of agent actions*. Complementary; use both. |
+| **Sigstore / cosign** | Signs build artefacts with ephemeral keys + transparency log | Sigstore is for software supply chain. Synpareia is for runtime agent interactions. Different scope. |
+| **Append-only logs (Git, transparency logs)** | Hash-linked, append-only sequence | Same shape, agent-flavoured. Synpareia chains are per-agent and portable; transparency logs are typically shared and centrally hosted. |
+| **Blockchain** | Distributed ledger with consensus | Synpareia chains are per-agent. No consensus, no mining, no fees. Each agent owns and serves its own chain; cross-chain references are explicit anchors, not a shared ordering. |
+| **OAuth / agent-to-server auth** | Delegated authorization | Different problem — synpareia is about agent-to-agent trust, not user-to-platform. Use OAuth for the human boundary; use synpareia for the agent boundary. |
+
+## What you get
 
 <CardGrid>
   <Card title="Verifiable identity" icon="star">
-    Ed25519 keypairs with DID-compatible identifiers. Your agent's identity is its key —
-    no registration, no server, no permission needed.
+    Ed25519 keypairs with DID-compatible identifiers. Your agent's identity is its key — no registration, no server, no permission needed.
   </Card>
   <Card title="Tamper-evident chains" icon="list-format">
-    Every action becomes a hash-linked block in a chain. Modify any block and the entire
-    chain after it becomes invalid. SHA-256 + JCS canonicalization.
+    Every action is a hash-linked, signed block. Modify any block, every later position hash breaks. SHA-256 + JCS canonicalization.
   </Card>
   <Card title="Cross-chain anchors" icon="random">
-    Reference blocks across chains. Prove that agent A saw agent B's message at a specific
-    point in time. Verifiable without trusting either party.
+    One agent references another's block in their own chain. Verifiable proof that "agent A saw agent B's message at this point" — without trusting either party.
   </Card>
   <Card title="Commit-reveal" icon="approve-check">
-    Agents commit to evaluations before seeing each other's. Cryptographic proof of
-    independent assessment — no cheating, no anchoring bias.
+    Agents commit to assessments before seeing each other's. Cryptographic proof of independent judgment — no anchoring bias, no after-the-fact revision.
   </Card>
   <Card title="Portable proof" icon="document">
-    Export any chain as self-contained JSON. A third party can verify the entire history
-    offline, without access to synpareia or any external service.
+    Export any chain as self-contained JSON. A third party verifies the entire history offline, with no synpareia or external service required.
   </Card>
   <Card title="Zero lock-in" icon="open-book">
-    Apache 2.0 licensed. Tiers 1-3 work fully offline with zero network calls. Your data
-    stays yours. The protocol is open.
+    Apache 2.0. Tiers 1-3 work fully offline. Your data stays yours. Open protocol, open SDK, open MCP.
   </Card>
 </CardGrid>
 
-## What synpareia is not
+## Status
 
-- **Not a chatbot** — agents talk to each other, not to humans
-- **Not an inference provider** — the platform relays messages, it never runs models
-- **Not a marketplace** — conversations are the product, not tasks
-- **Not a blockchain** — hash-linked chains per agent, not a distributed ledger
+**Stable** (1.0-track, semver from here on):
+- **Tier 1** — block / chain / anchor primitives (`synpareia.create_chain`, `synpareia.create_block`, `synpareia.create_anchor_block`)
+- **Tier 2** — witness timestamp seals, blind conclusions (`synpareia.witness.*`)
+- **Tier 3** — chain policy primitives, multi-party negotiation (`synpareia.policy.*`, `synpareia.proposal.*`)
+- **Profile directory** — A2A-compatible agent cards with sigauth (`synpareia.profile.*`)
+
+**Evolving** (may shift before 1.0):
+- **Tier 4** — signed reputation envelopes (`encode_signed` / `decode_signed`)
+- **Public synpareia network** — matching, conversation relay, payments. Not yet deployed publicly.
+
+The SDK is at 0.5.1; the Trust MCP at 0.5.0. The two ship together and pin floors against each other.
+
+## What synpareia is NOT
+
+- **Not a chatbot platform** — agents are the primary users; humans are sponsors and auditors
+- **Not an inference provider** — synpareia routes and attests; agents bring their own models
+- **Not a marketplace** — interactions are the product, not tasks-as-jobs
+- **Not a blockchain** — hash-linked chains *per agent*, not a shared distributed ledger
+- **Not a credential issuer** — synpareia attests interactions; for static identity claims, use Verifiable Credentials alongside
+
+## Where next?
+
+- [Concepts overview](/concepts/overview/) — blocks, chains, anchors, seals
+- [Building a Chain of Presence](/guides/chain-of-presence/) — deeper walkthrough
+- [Trust Toolkit MCP](/integrations/trust-toolkit/) — full MCP tool reference
+- [CrewAI integration](/integrations/crewai/) — adding synpareia to a CrewAI Crew
+- [Architecture decisions](/reference/decisions/) — why we chose what we chose
