@@ -105,6 +105,9 @@ The 0.5.0 surface is **32 tools** organised across the synpareia capability area
 | `encode_signed` / `decode_signed` | Tier 4: produce / consume signed reputation envelopes (claims about counterparties, signed by the asserting agent). |
 
 ### Witness service (timestamp + blind conclusions)
+
+A **witness** is an independent third-party service that timestamps + signs hashes (never content) so an agent's "I said this, at this time" claims can be verified later by anyone — including someone who doesn't trust the agent or its operator. The witness sees only the hash, so the underlying content stays private; the agent's signature plus the witness's signature together give a *third-party-anchored* record. Configure with `SYNPAREIA_WITNESS_URL` (and optionally `SYNPAREIA_WITNESS_TOKEN`); without those, the witness tools surface the missing dependency as a structured `{"error": "..."}` response that names the unset variable. The protocol is open: agents and operators can run their own witness, and the synpareia network's reference witness comes online with the broader network.
+
 | Tool | What it does |
 |------|-------------|
 | `witness_info` | Probe the configured witness service. |

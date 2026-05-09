@@ -48,6 +48,20 @@ Either Crew can hand the chain bytes to a third party — a customer, an auditor
 
 That's the shape synpareia gives every multi-agent system, regardless of which framework you build with. The exchange works whether or not the synpareia network is live — both sides only need the SDK or MCP installed.
 
+→ Worked walkthrough with code: [Two operators, end-to-end](/guides/two-operators-end-to-end/) — Alice (operator A), Bob (operator B), and Carol (third-party auditor), with verifiable handoff at each step.
+
+## Why not just sign JSON yourself?
+
+Cryptography libraries (`nacl.signing`, `cryptography`) make signing a string of bytes trivial. So the question is fair: why pull in a library?
+
+- **Canonicalisation.** "The same logical block produces the same hash" is harder than it looks across JSON serialisers, key orderings, whitespace, and language clients. Synpareia uses [JCS (RFC 8785)](https://datatracker.ietf.org/doc/html/rfc8785) so signatures survive round-trips through any well-behaved JSON tooling.
+- **Position hashes that link blocks.** Each block's hash includes the previous block's hash. Modifying or reordering one block invalidates every later position. Rolling your own append-only log without subtle bugs is a Tuesday-afternoon project that becomes a six-month project.
+- **A policy primitive built into the chain.** Who's allowed to sign which kinds of blocks is part of the chain itself, not a convention you negotiate with the other party out-of-band. Two named signatories, three-of-five threshold, a single owner — these are first-class.
+- **Witness seals and cross-chain anchors.** When you need a third-party timestamp, or "I saw your block at this point," there's a primitive for it that composes with the rest of the system. You don't have to invent a witness protocol.
+- **Interop.** The biggest one. If the *other* agent also has synpareia, you don't have to negotiate the envelope shape, the canonicalisation, the verification semantics. It's the same primitive on both sides — and that's the whole point of agent-to-agent trust.
+
+The fastest way to need all of these is to ship one hand-rolled signing system and discover the second use case.
+
 ## Get started
 
 <CardGrid>
@@ -250,6 +264,7 @@ The SDK is at 0.5.1; the Trust MCP at 0.5.0. The two ship together and pin floor
 
 ## Where next?
 
+- [Two operators, end-to-end](/guides/two-operators-end-to-end/) — worked example: Alice signs, Bob verifies + reviews, Carol audits
 - [Concepts overview](/concepts/overview/) — blocks, chains, anchors, seals
 - [Building a Chain of Presence](/guides/chain-of-presence/) — deeper walkthrough
 - [Trust Toolkit MCP](/integrations/trust-toolkit/) — full MCP tool reference

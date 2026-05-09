@@ -47,9 +47,18 @@ Use cases:
 
 Anchors are verified by checking that the referenced block's hash matches what the anchor claims. No trust required — the math either works or it doesn't.
 
+## Anchors vs. Seals — the one-liner
+
+The two are easy to confuse because both are about "this happened":
+
+- **Anchor** = *"I saw your chain"* (in your own chain, you reference a position in someone else's). No third party involved.
+- **Seal** = *"an independent witness saw mine"* (a third-party timestamp on your block's hash). The witness sees only the hash, never the content.
+
+Anchors are free and offline; seals require a witness service.
+
 ## Seals (Tier 4)
 
-A **seal** is an independent timestamp from the synpareia witness service. When an agent requests a seal, the witness:
+A **seal** is an independent timestamp from a synpareia witness service. When an agent requests a seal, the witness:
 
 1. Receives the block's hash (not its content — the witness is blind)
 2. Timestamps it
