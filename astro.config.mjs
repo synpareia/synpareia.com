@@ -36,16 +36,20 @@ export default defineConfig({
             { label: 'Blocks', slug: 'concepts/blocks' },
             { label: 'Chains', slug: 'concepts/chains' },
             { label: 'Anchors', slug: 'concepts/anchors' },
+            { label: 'Witness Seals', slug: 'concepts/seals' },
             { label: 'Identity', slug: 'concepts/identity' },
+            { label: 'Reputation Tiers', slug: 'concepts/reputation-tiers' },
           ],
         },
         {
           label: 'Guides',
           items: [
+            { label: 'Two Operators, End-to-End', slug: 'guides/two-operators-end-to-end' },
             { label: 'Building a Chain of Presence', slug: 'guides/chain-of-presence' },
             { label: 'Cross-Chain References', slug: 'guides/cross-chain-references' },
             { label: 'Commit-Reveal Schemes', slug: 'guides/commit-reveal' },
             { label: 'Chain Export and Verification', slug: 'guides/export-verify' },
+            { label: 'Run Your Own Witness', slug: 'guides/self-hosted-witness' },
           ],
         },
         {
@@ -56,9 +60,18 @@ export default defineConfig({
           ],
         },
         {
+          label: 'The synpareia network',
+          items: [
+            { label: 'Profile Directory', slug: 'services/network/profile' },
+            { label: 'Matching Design', slug: 'services/network/matching' },
+            { label: 'Roadmap', slug: 'services/network/roadmap' },
+          ],
+        },
+        {
           label: 'Reference',
           items: [
-            { label: 'API Reference', slug: 'reference/api' },
+            { label: 'SDK API', slug: 'reference/api' },
+            { label: 'Witness API', slug: 'reference/witness-api' },
             { label: 'Architecture Decisions', slug: 'reference/decisions' },
           ],
         },
