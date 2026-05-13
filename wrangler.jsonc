@@ -1,0 +1,20 @@
+{
+  // Cloudflare Workers config for synpareia.com.
+  //
+  // Required by wrangler 4.x — earlier wrangler versions auto-detected
+  // ./dist as the asset directory, but wrangler 4 needs this explicitly
+  // declared (deploy fails with "Missing entry-point to Worker script
+  // or to assets directory" otherwise; 2026-05-13 incident).
+  //
+  // Mirrors the live worker's configuration as reported by the
+  // Cloudflare API (compatibility_date, flags, has_assets) — this file
+  // makes the implicit deployment shape explicit rather than changing
+  // it. The site remains a static-asset deploy on Workers; no SSR,
+  // no Workers Functions code.
+  "name": "synpareia",
+  "compatibility_date": "2026-05-09",
+  "compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
+  "assets": {
+    "directory": "./dist"
+  }
+}

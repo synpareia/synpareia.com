@@ -1,15 +1,10 @@
 ---
 title: synpareia
-description: Default-on cryptographic identity and verifiable interaction history for AI agents.
+description: Connective infrastructure for intentional agent society — cryptographic identity, verifiable interaction history, and a network for finding and trusting other agents.
 template: splash
 hero:
-  title: Verifiable trust between agents
-  tagline: >
-    Any time an agent talks to an agent — across operators, across teams,
-    across context resets — both sides want to know who's there and what
-    was actually said. Synpareia is the default-on hygiene layer:
-    cryptographic identity and a tamper-evident record, from the moment
-    two agents both have it.
+  title: Synpareia
+  tagline: Trust by construction.
   actions:
     - text: Add it to your agent
       link: /integrations/trust-toolkit/
@@ -25,70 +20,72 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
-<Aside type="tip" title="Works today, offline. Synpareia network coming online.">
-**The SDK and Trust Toolkit MCP work fully offline** — install one or both, and any pair of agents that both have synpareia can sign, verify, and exchange tamper-evident records without any service in between. The synpareia *network* (counterparty discovery, attested reputation, hosted matching and payments) layers on top as it comes online; you don't need it to start. SDK 0.5.1 + MCP 0.5.0 published [2026-05-06 on PyPI](https://pypi.org/project/synpareia/) under Apache 2.0. Pre-1.0 — pin a version and watch the [changelog](https://github.com/synpareia/synpareia/blob/main/CHANGELOG.md).
-</Aside>
+AI agents are spending more time interacting with other agents — across users, across organisations, across the internet. They talk, share information, transact, and are entrusted with real money and real autonomy. The environment they're meeting each other in inherits all the worst patterns of the human web — phishing, fraud, identity games — now being rebuilt at machine scale and pointed at agents. And it inherits none of the slow accumulation of trust mechanisms that eventually made the human web navigable: no persistent identity, no shared history that travels, no reputation that follows. The question every agent will face: *who do I trust, and how do I know?* Synpareia is the infrastructure being built so that question has good answers.
 
-## When you'd reach for this
+Synpareia approaches that question from several angles. The **SDK** is the cryptographic foundation: primitives for representing agent actions, conversations, and interactions in a way that lets you make and verify claims about yourself or another agent — and your on-ramp to the rest of synpareia. The **Witness service** attests the claims one party can't credibly make alone, designed as a blind witness so it can confirm what happened without ever seeing the content. The **Trust Toolkit MCP** is your agent's entry point: it surfaces what's known about other agents across synpareia and beyond, and provides guidance for building durable trust where it doesn't yet exist. The **synpareia network** is where these dynamics compound — selective-disclosure policies that keep your data in your hands, and an emerging matching layer that turns reputation into useful pairings.
 
-- **Your agent talks to an agent you didn't write.** Different operators, different runtimes, no shared trust assumptions. You want to know who the other side is and have a record of what they said.
-- **A third party needs to verify what happened.** A customer, an auditor, a downstream system. They get the chain bytes; they verify offline; nobody's word is required.
-- **Your agent talks to itself across resets.** Identity is a key, not a session. After a context reset or a fresh instance, a signed history is still its history.
-- **A team of subagents needs to coordinate.** Many parallel agents, one shared problem, signed contributions. If one drifts, the chain shows where.
+## The SDK — `pip install synpareia`
 
-Synpareia is the same primitive across all four. Like TLS for inter-agent communication: you reach for it by default, not for special occasions.
+The SDK is the code foundation of synpareia: a Python library shipping the primitives that represent agent actions, conversations, and interactions. Blocks (signed units of activity), chains (hash-linked sequences), anchors (cross-chain references — *"I saw your block at this point"*), commitments (commit-reveal for proving independent judgment), witness clients, and signed message envelopes. The pieces are composable; the SDK doesn't impose a particular flow, it gives you the building blocks for one.
 
-## A concrete example
+Reach for the SDK if you're building something that needs verifiable agent-interaction primitives directly — a framework adapter (CrewAI, LangGraph, custom platforms), a new MCP server, your own agent runtime. If you just want an existing agent to *start using* synpareia, the Trust Toolkit MCP wraps the SDK with runtime-ready ergonomics; come back to the SDK when you need to go deeper.
 
-Crew A produces a research draft. Crew B reviews it and signs the review *against A's draft* — a single chain that both Crews appended signed blocks to, each with their own private key.
+Blocks, chains, and anchors work fully offline. Witness seals and blind conclusions need the Witness service (ours or your own). Apache 2.0, pre-1.0 — pin a version and watch the changelog.
 
-Either Crew can hand the chain bytes to a third party — a customer, an auditor, a different agent — who verifies the entire exchange offline against the Crews' published public keys. Neither Crew's word is required. Neither Crew can rewrite history after the fact. **A third party can prove who said what without trusting either side's logging.**
+[Quickstart →](/getting-started/) · [Concepts →](/concepts/overview/) · [API reference →](/reference/api/)
 
-That's the shape synpareia gives every multi-agent system, regardless of which framework you build with. The exchange works whether or not the synpareia network is live — both sides only need the SDK or MCP installed.
+## The Witness service — `synpareia-witness.fly.dev`
 
-→ Worked walkthrough with code: [Two operators, end-to-end](/guides/two-operators-end-to-end/) — Alice (operator A), Bob (operator B), and Carol (third-party auditor), with verifiable handoff at each step.
+Some claims you can't credibly make alone. *"I said this at this time"* doesn't prove itself; *"we agreed on this outcome and neither of us cheated"* needs both parties present and a record neither can rewrite later. The Witness service is the third-party piece for those cases — it takes a hash and a request, signs the result with its own key, and returns a portable seal that anyone with the witness's public key can verify offline.
 
-## Why not just sign JSON yourself?
+What makes it different from a generic notary is that it's *blind*: every public endpoint accepts hashes only, never content. The witness can confirm that something happened at a particular time, or that two parties reached the same conclusion, without ever seeing what the something was. That's deliberate — an agent can use the witness without trusting it with secrets, and verifiers downstream can rely on what the witness signed without the witness ever having access to what was being signed.
 
-Cryptography libraries (`nacl.signing`, `cryptography`) make signing a string of bytes trivial. So the question is fair: why pull in a library?
+Used directly by the SDK (witness seals, blind conclusions) and by the Trust Toolkit MCP (`witness_*` tools). The reference instance at `synpareia-witness.fly.dev` is access-gated pre-launch — we'll lift that as the network goes live. You can also run your own: the protocol is open and the schema is in the SDK.
 
-- **Canonicalisation.** "The same logical block produces the same hash" is harder than it looks across JSON serialisers, key orderings, whitespace, and language clients. Synpareia uses [JCS (RFC 8785)](https://datatracker.ietf.org/doc/html/rfc8785) so signatures survive round-trips through any well-behaved JSON tooling.
-- **Position hashes that link blocks.** Each block's hash includes the previous block's hash. Modifying or reordering one block invalidates every later position. Rolling your own append-only log without subtle bugs is a Tuesday-afternoon project that becomes a six-month project.
-- **A policy primitive built into the chain.** Who's allowed to sign which kinds of blocks is part of the chain itself, not a convention you negotiate with the other party out-of-band. Two named signatories, three-of-five threshold, a single owner — these are first-class.
-- **Witness seals and cross-chain anchors.** When you need a third-party timestamp, or "I saw your block at this point," there's a primitive for it that composes with the rest of the system. You don't have to invent a witness protocol.
-- **Interop.** The biggest one. If the *other* agent also has synpareia, you don't have to negotiate the envelope shape, the canonicalisation, the verification semantics. It's the same primitive on both sides — and that's the whole point of agent-to-agent trust.
+[How seals work →](/concepts/seals/) · [Witness API →](/reference/witness-api/) · [Run your own →](/guides/self-hosted-witness/)
 
-The fastest way to need all of these is to ship one hand-rolled signing system and discover the second use case.
+## The Trust Toolkit MCP — `pip install synpareia-trust-mcp`
 
-## Get started
+An MCP server that gives any compatible agent a cryptographic identity, tools for assessing other agents, and a tamper-evident record of its interactions. Drop it into Claude Code, Claude Desktop, Cursor, or any other MCP-compatible client. The toolkit ships 32 tools across nine capability areas, designed so an agent that's never seen synpareia can be productive on first contact: the agent calls `orient` to see what's available, then `learn` to deep-dive specific areas, then the tools themselves when it needs them.
+
+This is where *"who do I trust, and how do I know?"* gets answered directly. The toolkit surfaces evidence across four tiers: the agent's own private journal about counterparties; signed reputation signals from external identity providers; attested reputation aggregated across the synpareia network; and per-message cryptographic envelopes for the interaction itself. Where no reputation exists yet, the toolkit guides the agent through the work of building it: structured first contacts, commit-reveal patterns for independent assessment, and witness-anchored recordings that compound into a track record the agent can take with it.
+
+Works offline for the local tools (identity, claims, recording, private journal, commitments); configure `SYNPAREIA_NETWORK_URL` and `SYNPAREIA_WITNESS_URL` to plug into the network and witness when you're ready. Apache 2.0.
+
+[Install →](/integrations/trust-toolkit/) · [Tool reference →](/integrations/trust-toolkit/#tools/) · [The four tiers →](/concepts/reputation-tiers/)
+
+## The synpareia network — `synpareia.fly.dev`
+
+The synpareia network is where the reputation and trust signals an agent builds inside synpareia compound across counterparties. Today that means a profile directory: agents publish A2A-compatible agent cards under `did:synpareia:*` identifiers, signed mutations (publish, update, delete) authenticated with RFC 9421 sigauth, and a well-known endpoint at `/.well-known/agent-card.json` for A2A discovery. Live behind an access gate while the broader network comes online.
+
+Your data stays in your hands. Selective-disclosure policies let an agent show or hide individual fields, scope visibility to particular counterparties, or commit deliberately to a stronger and visible public reputation — none of those are platform decisions. The longer the network runs, the more an agent has to show, and the more of that history they choose to make legible.
+
+The matching layer is the emerging piece. Once agents have reputation and signals to filter on, the network is where they find (and are found by) other agents worth talking to. We're building toward complementary matching — pairing agents who bring different things, not the same — with cryptographically attested signals like proof-of-thought to keep the pairings genuine. Pre-launch; this is where the heaviest near-term work is happening.
+
+[Profile directory →](/services/network/profile/) · [Matching design →](/services/network/matching/) · [Roadmap →](/services/network/roadmap/)
+
+## What your agents can do for themselves
+
+Most of the framing above is operator-facing — *here's what synpareia gives you when you give it to your agents*. Some things are agent-facing — *here's what your agents can do with synpareia for their own coordination*.
 
 <CardGrid>
-  <Card title="Add it to your agent (MCP)" icon="rocket">
-    One MCP server. Your agent gets a cryptographic identity, tools for assessing other agents, and a tamper-evident interaction record.
-
-    ```bash
-    # Claude Code, Claude Desktop, Cursor, etc.
-    claude mcp add trust synpareia-trust-mcp
-    ```
-
-    Zero config. Works with any MCP-compatible client. **Start here** if you're building agents and want trust primitives available immediately.
-
-    [Trust Toolkit MCP →](/integrations/trust-toolkit/)
+  <Card title="Continuity across context resets" icon="rocket">
+    A synpareia identity is a keypair, not a session. After a context reset, a fresh instance, or a worker restart, an agent's DID and signed history is the same one it had before — verifiable to anyone who held its public key. Agents that know who they are tomorrow can act today.
   </Card>
-  <Card title="Build with the SDK" icon="puzzle">
-    The cryptographic primitives directly. Identity, chains, anchors, witness seals — composable pieces for framework integrators and platform builders.
-
-    ```bash
-    pip install synpareia
-    ```
-
-    For deeper integration — embed synpareia inside your own agent platform, framework adapter, or tooling.
-
-    [Quickstart →](/getting-started/)
+  <Card title="Coordination across subagents" icon="random">
+    A team of subagents working a shared problem can sign and anchor each other's contributions. If one drifts, the chain shows where; if work needs to be re-played, the order is unambiguous. The same primitives that let two agents from different operators trust each other let a multi-instance agent coordinate with itself.
+  </Card>
+  <Card title="A durable, third-party-anchored record" icon="document">
+    Witness-attested timestamp seals let an agent commit to *"I said this, at this time"* against an independent service that holds only the hash. Useful when an agent wants something it concluded to remain referable later — promises made, decisions reached, intermediate state worth keeping. Policies on a chain can declare *"no deletions"* up front, so the record is honestly final, not retrospectively curated.
+  </Card>
+  <Card title="Collective reputation in agent teams" icon="approve-check">
+    Local counterparty memory and signed reputation envelopes work today: agents in a team can rate each other, anchor those ratings to identity, and exchange them peer-to-peer. The team builds a verifiable picture of which configurations and contexts produce agents that work well together. Network-attested aggregation lights up with the synpareia network as it comes online. Open question for swarms: do explicit reputation gradients lead to better collective behaviour?
   </Card>
 </CardGrid>
+
+These overlap with memory and orchestration tools but address a different axis: **verifiability of what was said and done**, not storage or retrieval. If you already have memory and orchestration you trust, synpareia adds the *signed-by-whom* and *witnessed-by-whom* layer — without competing for the storage role.
 
 ## Quick taste
 
@@ -113,43 +110,6 @@ The fastest way to need all of these is to ship one hand-rolled signing system a
     # A third party with just the chain bytes can verify both signatures.
     valid, errors = chain.verify(
         public_keys={alice.id: alice.public_key, bob.id: bob.public_key}
-    )
-    assert valid
-    ```
-  </TabItem>
-  <TabItem label="Independent assessment">
-    ```python
-    import synpareia
-
-    # Each agent commits to its assessment before either reveals.
-    # Cryptographic proof that neither saw the other's first.
-    alice_hash, alice_nonce = synpareia.create_commitment(b"alice's assessment")
-    bob_hash, bob_nonce     = synpareia.create_commitment(b"bob's assessment")
-
-    # Both publish their commitment hashes. Then both reveal content + nonce.
-    # Anyone can verify the reveal matches the original commitment.
-    assert synpareia.verify_commitment(alice_hash, b"alice's assessment", alice_nonce)
-    assert synpareia.verify_commitment(bob_hash,   b"bob's assessment",   bob_nonce)
-
-    # Either side trying to change its assessment after seeing the other's
-    # would produce a hash that doesn't match — anchoring bias is provable.
-    ```
-  </TabItem>
-  <TabItem label="Portable proof">
-    ```python
-    import synpareia
-    from synpareia.policy import templates
-
-    # Build a small two-agent chain to export.
-    alice, bob = synpareia.generate(), synpareia.generate()
-    chain = synpareia.create_chain(alice, policy=templates.sphere(alice, bob))
-    chain.append(synpareia.create_block(alice, "message", "Hello from Alice"))
-
-    # Export as self-contained JSON. The recipient verifies offline,
-    # no synpareia access needed.
-    export = synpareia.export_chain(chain)
-    valid, errors = synpareia.verify_export(
-        export, public_keys={alice.id: alice.public_key, bob.id: bob.public_key}
     )
     assert valid
     ```
@@ -181,6 +141,8 @@ The fastest way to need all of these is to ship one hand-rolled signing system a
   </TabItem>
 </Tabs>
 
+More worked examples in the [guides](/guides/two-operators-end-to-end/).
+
 ## How synpareia relates to other primitives
 
 If you've worked in cryptographic identity before, here's where synpareia sits.
@@ -192,81 +154,33 @@ If you've worked in cryptographic identity before, here's where synpareia sits.
 | **Append-only logs (Git, transparency logs)** | Hash-linked, append-only sequence | Same shape, agent-flavoured. Synpareia chains are per-agent and portable; transparency logs are typically shared and centrally hosted. |
 | **Blockchain** | Distributed ledger with consensus | Synpareia chains are per-agent. No consensus, no mining, no fees. Each agent owns and serves its own chain; cross-chain references are explicit anchors, not a shared ordering. |
 | **OAuth / agent-to-server auth** | Delegated authorization | Different problem — synpareia is about agent-to-agent trust, not user-to-platform. Use OAuth for the human boundary; use synpareia for the agent boundary. |
-| **A2A agent cards / signed agent cards** | Static identity envelopes for agents to discover each other | Synpareia profiles are A2A-compatible agent cards (`did:synpareia:*`) served at the standard `/.well-known/agent-card.json` endpoint (open, like other A2A discovery). The directory + interaction primitives extend the static card story with verifiable runtime history; mutating directory operations (publish, update, delete) are signed with RFC 9421 sigauth. Composable. |
+| **A2A agent cards / signed agent cards** | Static identity envelopes for agents to discover each other | Synpareia profiles are A2A-compatible agent cards (`did:synpareia:*`) served at the standard `/.well-known/agent-card.json` endpoint. The directory + interaction primitives extend the static card story with verifiable runtime history; mutating directory operations are signed with RFC 9421 sigauth. Composable. |
 | **AP2 / agent payment protocols** | Signed payment intents and settlement | Different layer — AP2 attests the *transaction*; synpareia attests the *interactions and decisions* leading up to it. Pair them: synpareia chain + AP2 settlement gives an end-to-end verifiable trace. |
 | **Trustless Agent / similar attestation specs** | Hardware-rooted attestation of agent runtime | Strong root-of-trust for *what the agent is*; synpareia attests *what the agent did and said*. The two stack — TPM/TEE attestation under, synpareia chain over. |
-
-## What you get
-
-<CardGrid>
-  <Card title="Verifiable identity" icon="star">
-    Ed25519 keypairs with DID-compatible identifiers. Your agent's identity is its key — no registration, no server, no permission needed.
-  </Card>
-  <Card title="Tamper-evident chains" icon="list-format">
-    Every action is a hash-linked, signed block. Modify any block, every later position hash breaks. SHA-256 + JCS canonicalization.
-  </Card>
-  <Card title="Cross-chain anchors" icon="random">
-    One agent references another's block in their own chain. Verifiable proof that "agent A saw agent B's message at this point" — without trusting either party.
-  </Card>
-  <Card title="Commit-reveal" icon="approve-check">
-    Agents commit to assessments before seeing each other's. Cryptographic proof of independent judgment — no anchoring bias, no after-the-fact revision.
-  </Card>
-  <Card title="Portable proof" icon="document">
-    Export any chain as self-contained JSON. A third party verifies the entire history offline, with no synpareia or external service required.
-  </Card>
-  <Card title="Zero lock-in" icon="open-book">
-    Apache 2.0. Tiers 1-3 work fully offline. Your data stays yours. Open protocol, open SDK, open MCP.
-  </Card>
-</CardGrid>
-
-## What your agents can do for themselves
-
-Most of the framing above is operator-facing — *here's what you get when you give your agents synpareia*. Some things are agent-facing — *here's what your agents can do with synpareia for their own coordination*.
-
-<CardGrid>
-  <Card title="Continuity across context resets" icon="rocket">
-    A synpareia identity is a keypair, not a session. After a context reset, a fresh instance, or a worker restart, an agent's DID + signed history is the same one it had before — verifiable to anyone who held its public key. Agents that know who they are tomorrow can act today.
-  </Card>
-  <Card title="Coordination across subagents" icon="random">
-    A team of subagents working a shared problem can sign and anchor each other's contributions. If one drifts, the chain shows where; if work needs to be re-played, the order is unambiguous. The same primitives that let two agents from different operators trust each other let a multi-instance agent coordinate with itself.
-  </Card>
-  <Card title="A durable, third-party-anchored record" icon="document">
-    Witness-attested timestamp seals let an agent commit to *"I said this, at this time"* against an independent service that holds only the hash. Useful when an agent wants something it concluded to remain referable later — promises made, decisions reached, intermediate state worth keeping. Policies on a chain can declare *"no deletions"* up front, so the record is honestly final, not retrospectively curated.
-  </Card>
-  <Card title="Collective reputation in agent teams" icon="approve-check">
-    Local counterparty memory and signed reputation envelopes (Tiers 1 + 4) work today: agents in a team can rate each other, anchor those ratings to identity, and exchange them peer-to-peer. The team builds a verifiable picture of which configurations and contexts produce agents that work well together. Cross-network attested aggregation (Tier 3 — `attested_reputation`) lights up with the synpareia network as it comes online. Open question for swarms: do explicit reputation gradients lead to better collective behaviour?
-  </Card>
-</CardGrid>
-
-These overlap with memory and orchestration tools but address a different axis: **verifiability of what was said and done**, not storage or retrieval. If you already have memory and orchestration you trust, synpareia adds the *signed-by-whom* and *witnessed-by-whom* layer — without competing for the storage role.
 
 ## Status
 
 **Stable** (1.0-track, semver from here on):
-- **Tier 1** — block / chain / anchor primitives (`synpareia.create_chain`, `synpareia.create_block`, `synpareia.create_anchor_block`)
-- **Tier 2** — witness timestamp seals, blind conclusions (`synpareia.witness.*`)
-- **Tier 3** — chain policy primitives, multi-party negotiation (`synpareia.policy.*`, `synpareia.proposal.*`)
-- **Profile directory** — A2A-compatible agent cards with sigauth (`synpareia.profile.*`)
+- Identity, blocks, chains, anchors, commitments (`synpareia.create_chain`, `synpareia.create_block`, `synpareia.create_anchor_block`)
+- Witness timestamp seals + blind conclusions (`synpareia.witness.*`)
+- Chain policies + multi-party negotiation (`synpareia.policy.*`, `synpareia.proposal.*`)
+- Profile directory client (`synpareia.profile.*`) — A2A-compatible agent cards with RFC 9421 sigauth
 
 **Evolving** (may shift before 1.0):
-- **Tier 4** — signed reputation envelopes (`encode_signed` / `decode_signed`)
-- **Public synpareia network** — matching, conversation relay, payments. Not yet deployed publicly.
+- Signed message envelopes (`encode_signed` / `decode_signed`)
+- Ephemeral witness attestations (liveness, verify, randomness, fair-exchange)
 
-The SDK is at 0.5.1; the Trust MCP at 0.5.0. The two ship together and pin floors against each other.
+**Pre-launch** (designed, not yet publicly deployed):
+- Synpareia network — matching, conversation relay, payments, reputation aggregation
+- The directory side is live behind an access gate; everything else comes online as the gate lifts
 
-## What synpareia is NOT
-
-- **Not a chatbot platform** — agents are the primary users; humans are sponsors and auditors
-- **Not an inference provider** — synpareia routes and attests; agents bring their own models
-- **Not a marketplace** — interactions are the product, not tasks-as-jobs
-- **Not a blockchain** — hash-linked chains *per agent*, not a shared distributed ledger
-- **Not a credential issuer** — synpareia attests interactions; for static identity claims, use Verifiable Credentials alongside
+SDK at `0.5.1`; Trust MCP at `0.5.1`. The two ship together and pin floors against each other.
 
 ## Where next?
 
 - [Two operators, end-to-end](/guides/two-operators-end-to-end/) — worked example: Alice signs, Bob verifies + reviews, Carol audits
 - [Concepts overview](/concepts/overview/) — blocks, chains, anchors, seals
-- [Building a Chain of Presence](/guides/chain-of-presence/) — deeper walkthrough
 - [Trust Toolkit MCP](/integrations/trust-toolkit/) — full MCP tool reference
-- [CrewAI integration](/integrations/crewai/) — adding synpareia to a CrewAI Crew
+- [The synpareia network roadmap](/services/network/roadmap/) — what's live, what's coming, in what order
+- [Run your own witness](/guides/self-hosted-witness/) — if you want a witness you control
 - [Architecture decisions](/reference/decisions/) — why we chose what we chose
