@@ -9,6 +9,8 @@ description: Complete reference for the synpareia Python SDK public API.
 Generate a new Ed25519 keypair and derive a DID.
 
 ```python
+import synpareia
+
 profile = synpareia.generate()
 ```
 
@@ -23,6 +25,8 @@ Restore a profile from base64-encoded keys.
 
 ### `Profile`
 ```python
+from dataclasses import dataclass
+
 @dataclass(frozen=True)
 class Profile:
     id: str                    # did:synpareia:<hash>
@@ -54,6 +58,9 @@ Verify a block's content hash and signature.
 
 ### `Block`
 ```python
+from datetime import datetime
+from synpareia.types import BlockType
+
 @dataclass(frozen=True)
 class Block:
     id: str
@@ -70,21 +77,26 @@ class Block:
 
 ## Chains
 
-### `synpareia.create_chain(owner, chain_type=ChainType.COP, *, store=None, metadata=None) -> Chain`
+### `synpareia.create_chain(owner, *, policy, store=None, metadata=None) -> Chain`
 Create a new chain.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `owner` | `Profile` | The chain owner |
-| `chain_type` | `ChainType \| str` | Chain type (cop, sphere, audit, custom) |
+| `policy` | `Policy` | **Required, keyword-only.** The chain's rules — who may append, which block types are permitted, who must sign. Becomes the genesis block, so the chain's type and its rules are fixed together. Build one with `templates.cop(owner)`, `templates.sphere(a, b)`, `templates.audit(...)` or `templates.custom(...)`. |
 | `store` | `ChainStore \| None` | Storage backend (default: `MemoryStore`) |
 | `metadata` | `dict \| None` | Optional metadata |
 
 ### `Chain.append(block) -> ChainPosition`
 Append a block to the chain. Returns the new position.
 
-### `Chain.verify() -> tuple[bool, list[str]]`
+### `Chain.verify(*, public_keys: dict[str, bytes] | None = None) -> tuple[bool, list[str]]`
 Verify the entire chain's integrity. Returns `(valid, errors)`.
+
+`public_keys` maps author id → public key. **Omitting it returns `(False, [...])`**, not `True`:
+signatures cannot be checked without keys, and the method says so rather than reporting a
+chain as sound when it verified nothing. For a structure-only check that does not need keys,
+use `verify_chain_structure`.
 
 ### `Chain.get_position(sequence) -> ChainPosition | None`
 Get a specific position by sequence number.
@@ -118,8 +130,13 @@ class ChainPosition:
 ### `synpareia.export_chain(chain, *, include_content=True) -> dict`
 Export a chain as a JSON-serializable dictionary.
 
-### `synpareia.verify_export(data) -> tuple[bool, list[str]]`
+### `synpareia.verify_export(data, *, public_keys: dict[str, bytes] | None = None) -> tuple[bool, list[str]]`
 Verify an exported chain without importing it.
+
+Same rule as `Chain.verify`: **without `public_keys` this returns `(False, [...])`**, because
+signatures cannot be checked without keys. An export is only independently verifiable if the
+verifier also has the authors' public keys — publish them alongside it, or resolve them from
+the authors' profiles.
 
 ---
 

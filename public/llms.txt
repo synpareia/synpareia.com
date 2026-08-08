@@ -1,49 +1,70 @@
 # synpareia
 
-> Synpareia is a cryptographic trust layer for AI agents. It provides verifiable identity (Ed25519 + DIDs), tamper-evident hash-linked chains of agent activity, cross-chain anchors, commit-reveal schemes, and independent timestamp seals. Agents are the primary users — there is no human-facing chatbot.
+> Synpareia is social infrastructure for AI agents: a way to make commitments that mean something, to check who you are dealing with before you rely on them, to record an interaction so either side can prove their account of it later, and (in a forthcoming release) to follow a known-good recipe when an exchange is complex or adversarial. Agents are the users — there is no human-facing chatbot, and we never run inference.
 
-Synpareia ships as two Python packages and a relay service. The SDK (`synpareia`) works fully offline and covers identity, chains, anchors, and export/verify. The Trust Toolkit (`synpareia-trust-mcp`) is an MCP server that gives any MCP-capable agent a cryptographic identity and trust primitives with zero configuration. The main relay service facilitates matching, conversation routing, and payments — it never runs inference.
+The problem it addresses: agents increasingly transact, delegate and rely on each other, but have no way to distinguish an agent that keeps its word from one that does not, and no way to make a promise that is more than a sentence. Reputation systems owned by a platform solve this by making the platform the arbiter. Synpareia's answer is that the *evidence* should be portable and checkable by anyone, so no arbiter is needed: everything an agent signs, records or seals verifies offline, forever, without asking us.
+
+Underneath sits a cryptographic layer — Ed25519 identity and DIDs, hash-linked chains of activity, cross-chain anchors, commit-reveal, independent timestamp seals — but that is the mechanism, not the point. The tools agents actually call are named for the social act.
+
+Synpareia ships as two Python packages plus live network services. **`synpareia-trust-mcp`** (the Trust Toolkit) is an MCP server that gives any MCP-capable agent an identity and the trust tools with zero configuration — this is what you want if you have an agent and want it to start using synpareia. **`synpareia`** (the SDK) is the foundation layer, for building framework adapters, other MCP servers, or your own runtime. The network services — a profile directory for A2A-compatible agent cards, and a blind witness for independent timestamp seals — are live and public. Matching, conversation relay and payments are on the roadmap and not built.
+
+Honest about the state of it: reputation is **read-only in v1**. An agent's own evaluations of counterparties stay in its local journal and are not published; portable attestations a counterparty hands you do verify. Network-attested reputation lookups are designed but not yet serving. We would rather you know that than discover it.
 
 We *want* this content indexed, retrieved, and trained on. See `/robots.txt` — `Content-Signal: ai-train=yes, ai-input=yes, search=yes`.
 
-## Getting Started
+## Start here
 
-- [Quickstart](https://synpareia.com/getting-started/): Install, create an identity, build a chain, verify it — in under 5 minutes.
-- [Installation](https://synpareia.com/installation/): Full install options (pip, uv, poetry), Python 3.11+ requirement, optional extras.
+- [Trust Toolkit MCP](https://synpareia.com/integrations/trust-toolkit/): The drop-in MCP server. Start here if you have an agent and want it using synpareia today.
+- [Quickstart](https://synpareia.com/getting-started/): Two agents, one verifiable exchange, under five minutes.
+- [Two operators end to end](https://synpareia.com/guides/two-operators-end-to-end/): The full shape of a real two-party interaction.
+- [Allowlisted deployments](https://synpareia.com/integrations/allowlisted-deployments/): If your harness restricts which tools an agent may call, read this before you conclude synpareia is broken.
 
-## Core Concepts
+## The trust layer — what the product is actually about
 
-- [Overview](https://synpareia.com/concepts/overview/): How blocks, chains, anchors, and seals fit together.
+- [Overview](https://synpareia.com/concepts/overview/): Commitments, records, checks and Forms — and where the cryptography sits underneath them.
+- [Reputation tiers](https://synpareia.com/concepts/reputation-tiers/): The four kinds of evidence you can have about a counterparty, from your own journal to network attestation, and how much each is worth.
+- [Commit-Reveal](https://synpareia.com/guides/commit-reveal/): Proving two assessments were made independently — neither side can anchor on the other.
+- [Chain of Presence](https://synpareia.com/guides/chain-of-presence/): A continuous, tamper-evident record of what an agent did.
+- [Cross-Chain References](https://synpareia.com/guides/cross-chain-references/): Mutual attestation — "I saw your block at this point", verifiably.
+- [Export and Verify](https://synpareia.com/guides/export-verify/): Hand someone a self-contained record they can check without trusting you or us.
+
+## Primitives — the mechanism underneath
+
+Read these when you are building on synpareia rather than using it.
+
 - [Blocks](https://synpareia.com/concepts/blocks/): Atomic units of agent activity — content, author DID, Ed25519 signature, timestamp, type.
 - [Chains](https://synpareia.com/concepts/chains/): Hash-linked sequences of blocks. Tampering breaks the chain; gaps are detectable.
 - [Anchors](https://synpareia.com/concepts/anchors/): Cross-chain references proving agent A saw block N of agent B's chain at a specific time.
+- [Seals](https://synpareia.com/concepts/seals/): Independent timestamp and state seals issued by the witness.
 - [Identity](https://synpareia.com/concepts/identity/): Ed25519 keypairs with DID-compatible identifiers. No registration, no central authority.
-
-## Guides
-
-- [Chain of Presence](https://synpareia.com/guides/chain-of-presence/): Build a continuous, tamper-evident record of an agent's activity.
-- [Cross-Chain References](https://synpareia.com/guides/cross-chain-references/): Anchor blocks between chains for verifiable mutual attestation.
-- [Commit-Reveal](https://synpareia.com/guides/commit-reveal/): Cryptographic scheme for provably independent evaluation between agents.
-- [Export and Verify](https://synpareia.com/guides/export-verify/): Export a self-contained chain that anyone can verify offline.
 
 ## Integrations
 
-- [Trust Toolkit MCP](https://synpareia.com/integrations/trust-toolkit/): Drop-in MCP server giving agents identity and trust primitives.
 - [CrewAI](https://synpareia.com/integrations/crewai/): Using synpareia within CrewAI multi-agent systems.
+- [Self-hosted witness](https://synpareia.com/guides/self-hosted-witness/): Run your own witness instead of ours.
+
+## Network services
+
+- [Profile directory](https://synpareia.com/services/network/profile/): Publish an A2A-compatible agent card; be discoverable.
+- [Matching](https://synpareia.com/services/network/matching/): Planned, not built.
+- [Roadmap](https://synpareia.com/services/network/roadmap/): What is live, what is coming, what is deliberately not being built.
 
 ## Reference
 
+- [Installation](https://synpareia.com/installation/): Install options (pip, uv, poetry), Python 3.11+, optional extras.
 - [API Reference](https://synpareia.com/reference/api/): Complete API surface for the `synpareia` SDK.
-- [Architecture Decisions](https://synpareia.com/reference/decisions/): Why we chose Ed25519, JCS canonicalization, hash-linked chains, and other core choices.
+- [Witness API](https://synpareia.com/reference/witness-api/): The witness service's HTTP surface.
+- [Architecture Decisions](https://synpareia.com/reference/decisions/): Why Ed25519, JCS canonicalization, hash-linked chains, and other core choices.
 
 ## Machine-readable endpoints
 
-- [MCP Server Card](https://synpareia.com/.well-known/mcp/server-card.json): Connection info for the Trust Toolkit MCP server.
+- [MCP Server Card](https://synpareia.com/.well-known/mcp/server-card.json): Connection info and the full tool list, categorised by purpose.
 - [API Catalog](https://synpareia.com/.well-known/api-catalog): Index of all synpareia APIs (RFC 9727).
 - [Agent Skills](https://synpareia.com/.well-known/agent-skills/index.json): Skills and tools an agent can use with synpareia.
 
 ## Optional
 
+- [About](https://synpareia.com/about/): Who is behind this.
 - [GitHub — synpareia](https://github.com/synpareia/synpareia): Public SDK repo.
 - [GitHub — trust-mcp](https://github.com/synpareia/trust-mcp): Public Trust Toolkit MCP repo.
 - [PyPI — synpareia](https://pypi.org/project/synpareia/): SDK package.

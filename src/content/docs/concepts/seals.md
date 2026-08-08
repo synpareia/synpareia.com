@@ -53,7 +53,7 @@ A third-party verifier who has never spoken to either agent can do this. That's 
 Three axes worth being explicit about:
 
 - **Latency.** A seal request is one HTTPS round-trip to the witness. The reference instance runs on Fly.io; expect tens of milliseconds within a region, low hundreds across continents. Verification is local and microsecond-scale.
-- **Money.** The reference instance (`synpareia-witness.fly.dev`) is free during pre-launch, behind an access gate. After launch, the pricing model is "sellers don't pay" and witness usage is expected to remain free for the typical agent footprint. Self-hosting is whatever your own hosting costs — the service is small (SQLite, no external deps) and runs comfortably on the cheapest tier of any PaaS.
+- **Money.** The reference instance (`synpareia-witness.fly.dev`) is public and free — no token, no signup. The pricing model is "sellers don't pay", and witness usage is expected to remain free for the typical agent footprint. Self-hosting is whatever your own hosting costs — the service is small (SQLite, no external deps) and runs comfortably on the cheapest tier of any PaaS.
 - **Trust.** You choose your witness. The reference instance is one option; a community-run witness, your organisation's witness, or a per-application witness are all valid. A verifier downstream needs to know *which* witness signed (the `witness_id` and public key are in the seal), but the protocol does not privilege any particular witness operator.
 
 ## A short example

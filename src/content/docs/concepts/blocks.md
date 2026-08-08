@@ -59,12 +59,12 @@ Only the content hash is stored. The content existed when the hash was computed,
 ```python
 from synpareia.types import ContentMode
 
-block = synpareia.create_block(
+hash_only_block = synpareia.create_block(
     profile, "message", "private content",
     content_mode=ContentMode.HASH_ONLY,
 )
-assert block.content is None
-assert block.content_hash is not None  # hash is still there
+assert hash_only_block.content is None
+assert hash_only_block.content_hash is not None  # hash is still there
 ```
 
 ### Revealed mode
@@ -72,7 +72,8 @@ A hash-only block that has been revealed — content filled back in and verified
 
 ```python
 revealed = synpareia.reveal_block(hash_only_block, "private content")
-# Raises ValueError if content doesn't match the hash
+assert revealed.content == b"private content"
+# Raises ValueError if the content doesn't match the hash the block committed to
 ```
 
 ## Signatures

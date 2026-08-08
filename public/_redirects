@@ -1,0 +1,31 @@
+# Cloudflare redirects — https://developers.cloudflare.com/workers/static-assets/redirects/
+#
+# Section roots have no index page of their own (Starlight generates pages
+# only for content entries), so a cold agent probing /docs/, /guides/, or
+# /concepts/ used to get a 404 and conclude "navigation broken" (launch
+# review LR-2). Redirect each section root to its natural entry page.
+#
+# /docs/* also catches the legacy URL scheme (docs once advertised
+# synpareia.com/docs/<page>/ paths, e.g. in .well-known/agent.json) —
+# content actually lives at the site root.
+
+/docs / 301
+/docs/ / 301
+/docs/* /:splat 301
+
+/concepts /concepts/overview/ 301
+/concepts/ /concepts/overview/ 301
+
+/guides /guides/two-operators-end-to-end/ 301
+/guides/ /guides/two-operators-end-to-end/ 301
+
+/integrations /integrations/trust-toolkit/ 301
+/integrations/ /integrations/trust-toolkit/ 301
+
+/reference /reference/api/ 301
+/reference/ /reference/api/ 301
+
+/services /services/network/profile/ 301
+/services/ /services/network/profile/ 301
+/services/network /services/network/profile/ 301
+/services/network/ /services/network/profile/ 301

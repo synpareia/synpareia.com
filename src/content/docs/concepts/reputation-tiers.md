@@ -81,11 +81,31 @@ Cryptographic proof that an identifier corresponds to a specific entity
 at a specific moment, plus reputation signals attested by a trust
 provider network.
 
-**Stored.** Nothing in the toolkit. v1 is **query-only** against
-configured providers (the synpareia reputation network, MolTrust).
-Submission of new attested reputation to the synpareia network is
-deferred to v2 pending witness Phase 2 (anonymous-credential identity
-binding for challenge and conclusion flows).
+**Stored.** Nothing in the toolkit itself. Reads go against configured
+providers (the synpareia reputation network, MolTrust); what you contribute
+to the synpareia network is content-less and consent-gated.
+
+From **0.9.0**, the synpareia loop is closed in both directions:
+`record_interaction` puts a magnitude and a valence on the shared network with
+the counterparty's consent, and `network_reputation` reads back a
+`(magnitude, confidence)` pair anchored on **your own position** in the network
+— so two agents asking about the same counterparty legitimately get different
+answers, and there is no global score. You never learn who reported or by what
+path; the collapsed pair is the entire answer.
+
+What is **not** deferred to a later version, but excluded by design: publishing
+the substance of a claim about a counterparty. The verdict travels; the text
+does not. A signed resolution stays something you hand to someone who verifies
+it offline.
+
+:::caution[`attested_reputation` does not yet use it]
+The `network_reputation` tool above is the working synpareia read. The
+multi-provider `attested_reputation` tool still reports `unavailable` for the
+synpareia provider, because its provider layer makes unauthenticated calls and
+the anchored read must be signed by the asker — there is no anonymous mode, by
+design. Treat a synpareia line inside `attested_reputation` as carrying no
+information either way. MolTrust, if you configure it, does return real signals.
+:::
 
 **Used for.** Either (a) verifying a purported DID via challenge-
 response — *"at time T, this counterparty controlled DID X"* — or

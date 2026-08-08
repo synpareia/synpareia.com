@@ -20,12 +20,13 @@ Each anchor is cryptographically verifiable: the referenced block's hash either 
 
 ```python
 import synpareia
+from synpareia import templates
 
 alice = synpareia.generate()
 bob = synpareia.generate()
 
-alice_chain = synpareia.create_chain(alice)
-bob_chain = synpareia.create_chain(bob)
+alice_chain = synpareia.create_chain(alice, policy=templates.cop(alice))
+bob_chain = synpareia.create_chain(bob, policy=templates.cop(bob))
 
 # Bob adds a message
 msg = synpareia.create_block(bob, "message", "Important finding")
@@ -64,11 +65,13 @@ Verification checks that the block at the referenced sequence in the target chai
 ```python
 from synpareia.types import AnchorType
 
-anchor_block, pos = synpareia.create_anchor_block(
-    profile, my_chain,
-    target_chain_id=their_chain.id,
-    target_sequence=5,
-    target_block_hash=their_block.content_hash,
+# Same call as above, with the anchor's meaning made explicit. Continues from the
+# alice/bob chains created earlier on this page.
+receipt_block, receipt_pos = synpareia.create_anchor_block(
+    alice, alice_chain,
+    target_chain_id=bob_chain.id,
+    target_sequence=bob_pos.sequence,
+    target_block_hash=msg.content_hash,
     anchor_type=AnchorType.RECEIPT,
 )
 ```
@@ -100,6 +103,9 @@ chains = {
     alice_chain.id: alice_chain,
     bob_chain.id: bob_chain,
 }
+
+# `find_anchors` yields (position, payload) pairs — take the payload of the first.
+_, anchor_payload = find_anchors(alice_chain)[0]
 
 target_block = resolve_anchor(anchor_payload, chains)
 if target_block:

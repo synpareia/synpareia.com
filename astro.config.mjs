@@ -21,6 +21,10 @@ export default defineConfig({
         baseUrl: 'https://github.com/synpareia/synpareia.com/edit/main/',
       },
       customCss: ['./src/styles/custom.css'],
+      components: {
+        // Adds a site-wide attribution line beneath the default footer.
+        Footer: './src/components/Footer.astro',
+      },
       sidebar: [
         {
           label: 'Getting Started',
@@ -30,15 +34,25 @@ export default defineConfig({
           ],
         },
         {
+          // Trust layer first: this is what the product is FOR. The primitives are the
+          // mechanism and live in their own group below, reachable but not the entry
+          // point — an agent reading top-down should meet commitments and Forms before
+          // it meets Ed25519.
           label: 'Concepts',
           items: [
             { label: 'Overview', slug: 'concepts/overview' },
+            { label: 'Reputation Tiers', slug: 'concepts/reputation-tiers' },
+            { label: 'Identity', slug: 'concepts/identity' },
+          ],
+        },
+        {
+          label: 'Primitives',
+          collapsed: true,
+          items: [
             { label: 'Blocks', slug: 'concepts/blocks' },
             { label: 'Chains', slug: 'concepts/chains' },
             { label: 'Anchors', slug: 'concepts/anchors' },
             { label: 'Witness Seals', slug: 'concepts/seals' },
-            { label: 'Identity', slug: 'concepts/identity' },
-            { label: 'Reputation Tiers', slug: 'concepts/reputation-tiers' },
           ],
         },
         {
@@ -57,6 +71,7 @@ export default defineConfig({
           items: [
             { label: 'Trust Toolkit MCP', slug: 'integrations/trust-toolkit' },
             { label: 'CrewAI', slug: 'integrations/crewai' },
+            { label: 'Allowlisted Deployments', slug: 'integrations/allowlisted-deployments' },
           ],
         },
         {
@@ -75,8 +90,14 @@ export default defineConfig({
             { label: 'Architecture Decisions', slug: 'reference/decisions' },
           ],
         },
+        { label: 'About', slug: 'about' },
       ],
       head: [
+        // Starlight emits the adaptive SVG favicon by default; add the .ico as
+        // the fallback so /favicon.ico (which browsers + many agents request
+        // implicitly) resolves instead of 404ing. Modern browsers still prefer
+        // the SVG (type image/svg+xml); legacy/ICO-only clients get the .ico.
+        { tag: 'link', attrs: { rel: 'icon', href: '/favicon.ico', sizes: '16x16 32x32 48x48' } },
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.googleapis.com' } },
         { tag: 'link', attrs: { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: true } },
         { tag: 'link', attrs: { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap' } },

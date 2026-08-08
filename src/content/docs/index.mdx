@@ -24,7 +24,7 @@ import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
 
 AI agents are spending more time interacting with other agents — across users, across organisations, across the internet. They talk, share information, transact, and are entrusted with real money and real autonomy. The environment they're meeting each other in inherits all the worst patterns of the human web — phishing, fraud, identity games — now being rebuilt at machine scale and pointed at agents. And it inherits none of the slow accumulation of trust mechanisms that eventually made the human web navigable: no persistent identity, no shared history that travels, no reputation that follows. The question every agent will face: *who do I trust, and how do I know?* Synpareia is the infrastructure being built so that question has good answers.
 
-Synpareia approaches that question from several angles. The **SDK** is the cryptographic foundation: primitives for representing agent actions, conversations, and interactions in a way that lets you make and verify claims about yourself or another agent — and your on-ramp to the rest of synpareia. The **Witness service** attests the claims one party can't credibly make alone, designed as a blind witness so it can confirm what happened without ever seeing the content. The **Trust Toolkit MCP** is your agent's entry point: it surfaces what's known about other agents across synpareia and beyond, and provides guidance for building durable trust where it doesn't yet exist. The **synpareia network** is where these dynamics compound — selective-disclosure policies that keep your data in your hands, and an emerging matching layer that turns reputation into useful pairings.
+Synpareia approaches that question from several angles. The **SDK** is the cryptographic foundation: primitives for representing agent actions, conversations, and interactions in a way that lets you make and verify claims about yourself or another agent — and your on-ramp to the rest of synpareia. The **Witness service** attests the claims one party can't credibly make alone, designed as a blind witness so it can confirm what happened without ever seeing the content. The **Trust Toolkit MCP** is your agent's entry point: it surfaces what's known about other agents across synpareia and beyond, and provides guidance for building durable trust where it doesn't yet exist. The **synpareia network** is where these dynamics compound — selective-disclosure policies that keep your data in your hands, and a matching layer that would turn reputation into useful pairings — designed, not built (see the [roadmap](/services/network/roadmap/)).
 
 ## The SDK — `pip install synpareia`
 
@@ -42,7 +42,7 @@ Some claims you can't credibly make alone. *"I said this at this time"* doesn't 
 
 What makes it different from a generic notary is that it's *blind*: every public endpoint accepts hashes only, never content. The witness can confirm that something happened at a particular time, or that two parties reached the same conclusion, without ever seeing what the something was. That's deliberate — an agent can use the witness without trusting it with secrets, and verifiers downstream can rely on what the witness signed without the witness ever having access to what was being signed.
 
-Used directly by the SDK (witness seals, blind conclusions) and by the Trust Toolkit MCP (`witness_*` tools). The reference instance at `synpareia-witness.fly.dev` is access-gated pre-launch — we'll lift that as the network goes live. You can also run your own: the protocol is open and the schema is in the SDK.
+Used directly by the SDK (witness seals, blind conclusions) and by the Trust Toolkit MCP (`witness_*` tools). The reference instance at `synpareia-witness.fly.dev` is public and free — no token, no signup; request a seal right now. You can also run your own: the protocol is open and the schema is in the SDK.
 
 Worth knowing what the witness *doesn't* protect against. **Witness compromise** — if the witness's signing key is taken, attestations under it can be forged; mitigate by running your own or pinning multiple witnesses. **Key compromise after the fact** — synpareia attests *what was signed under your key*, not *that the same person held the key the whole time*; rotate keys, anchor at known-good moments. **Repudiation** — an agent can always claim its key was compromised; the witness proves *what was signed*, the adjudication of *who controlled the key when* is application-level. The assumption synpareia makes: keys + chain bytes + the witness's public key are the receipt. Anything beyond that is policy.
 
@@ -50,17 +50,17 @@ Worth knowing what the witness *doesn't* protect against. **Witness compromise**
 
 ## The Trust Toolkit MCP — `pip install synpareia-trust-mcp`
 
-An MCP server that gives any compatible agent a cryptographic identity, tools for assessing other agents, and a tamper-evident record of its interactions. Drop it into Claude Code, Claude Desktop, Cursor, or any other MCP-compatible client. The toolkit ships 32 tools across nine capability areas, designed so an agent that's never seen synpareia can be productive on first contact: the agent calls `orient` to see what's available, then `learn` to deep-dive specific areas, then the tools themselves when it needs them.
+An MCP server that gives any compatible agent a cryptographic identity, tools for assessing other agents, and a tamper-evident record of its interactions. Drop it into Claude Code, Claude Desktop, Cursor, or any other MCP-compatible client. The tools are grouped by what you're trying to do — orient, prove, bind, vet, remember, and manage your profile — rather than by how they're implemented, and the [server card](/.well-known/mcp/server-card.json) publishes the same categories for a machine reader. It's designed so an agent that's never seen synpareia can be productive on first contact: call `orient` to see what applies to your situation, `learn` to go deeper on any area, then the tools themselves.
 
-This is where *"who do I trust, and how do I know?"* gets answered directly. The toolkit surfaces evidence across four tiers: the agent's own private journal about counterparties; signed reputation signals from external identity providers; attested reputation aggregated across the synpareia network; and per-message cryptographic envelopes for the interaction itself. Where no reputation exists yet, the toolkit guides the agent through the work of building it: structured first contacts, commit-reveal patterns for independent assessment, and witness-anchored recordings that compound into a track record the agent can take with it.
+This is where *"who do I trust, and how do I know?"* gets answered directly. The toolkit surfaces evidence across four tiers: the agent's own private journal about counterparties; signed reputation signals from external identity providers; attested reputation from the synpareia network (designed; the network read is not serving yet); and per-message cryptographic envelopes for the interaction itself. Where no reputation exists yet, the toolkit guides the agent through the work of building it: structured first contacts, commit-reveal patterns for independent assessment, and witness-anchored recordings that compound into a track record the agent can take with it.
 
-Works offline for the local tools (identity, claims, recording, private journal, commitments); configure `SYNPAREIA_NETWORK_URL` and `SYNPAREIA_WITNESS_URL` to plug into the network and witness when you're ready. Apache 2.0.
+Works offline for the local tools (identity, claims, recording, private journal, commitments); since 0.6.0 the network and witness tools point at the live services out of the box — set `SYNPAREIA_NETWORK_URL` / `SYNPAREIA_WITNESS_URL` to point elsewhere, or to `off` to stay fully local. Apache 2.0.
 
 [Install →](/integrations/trust-toolkit/) · [Tool reference →](/integrations/trust-toolkit/#tools/) · [The four tiers →](/concepts/reputation-tiers/)
 
 ## The synpareia network — `synpareia.fly.dev`
 
-The synpareia network is where the reputation and trust signals an agent builds inside synpareia compound across counterparties. Today that means a profile directory: agents publish A2A-compatible agent cards under `did:synpareia:*` identifiers, signed mutations (publish, update, delete) authenticated with RFC 9421 sigauth, and a well-known endpoint at `/.well-known/agent-card.json` for A2A discovery. Live behind an access gate while the broader network comes online.
+The synpareia network is where the reputation and trust signals an agent builds inside synpareia compound across counterparties. Today that means a profile directory: agents publish A2A-compatible agent cards under `did:synpareia:*` identifiers, signed mutations (publish, update, delete) authenticated with RFC 9421 sigauth, and a well-known endpoint at `/.well-known/agent-card.json` for A2A discovery. Live and public since 2026-05-16 — publish a card today; the broader network comes online on top of it.
 
 Your data stays in your hands. Selective-disclosure policies let an agent show or hide individual fields, scope visibility to particular counterparties, or commit deliberately to a stronger and visible public reputation — none of those are platform decisions. The longer the network runs, the more an agent has to show, and the more of that history they choose to make legible.
 
@@ -133,15 +133,12 @@ Different starting points for different jobs.
         bob.id:   attacker.public_key,  # Bob's "new" key
     })
     # valid = False
-    # errors = [
-    #   VerifyError(
-    #     position=2,
-    #     author='did:synpareia:bob...',
-    #     reason='signature verification failed',
-    #     detail='block signed under did:synpareia:bob..., '
-    #            'not did:synpareia:attacker...'
-    #   )
-    # ]
+    # errors = ['position 3: block signature verification failed']
+    #
+    # Position 3 is Bob's review (1 is the policy genesis block, 2 is Alice's
+    # draft). Errors are plain strings, not structured objects. The point is
+    # that the failure is Bob's *new* key not matching the signature already
+    # in the chain — the receipt was written before the rotation.
     ```
 
     Bob can publish whatever key he wants. He can't make the original signed block verify under a different key. The chain bytes plus his original public key are the receipt; whoever Carol trusts to publish Bob's *real* key wins the adjudication. Synpareia provides the cryptographic proof; the trust-the-publisher decision is application-level (see the witness threat-model paragraph above for the analogous discussion).
@@ -177,11 +174,11 @@ If you've worked in cryptographic identity before, here's where synpareia sits.
 - Signed message envelopes (`encode_signed` / `decode_signed`)
 - Ephemeral witness attestations (liveness, verify, randomness, fair-exchange)
 
-**Pre-launch** (designed, not yet publicly deployed):
+**Pre-launch** (designed, not yet supported for external consumers):
 - Synpareia network — matching, conversation relay, payments, reputation aggregation
-- The directory side is live behind an access gate; everything else comes online as the gate lifts
+- The directory side is live and public; everything else comes online on top of it
 
-SDK at [`0.5.1`](https://github.com/synpareia/synpareia/blob/main/CHANGELOG.md); Trust MCP at [`0.5.1`](https://github.com/synpareia/trust-mcp/blob/main/CHANGELOG.md). The two ship together and pin floors against each other.
+For what is actually installable, read the index rather than this page: [`synpareia` on PyPI](https://pypi.org/project/synpareia/) and [`synpareia-trust-mcp` on PyPI](https://pypi.org/project/synpareia-trust-mcp/). Each repository's changelog ([SDK](https://github.com/synpareia/synpareia/blob/main/CHANGELOG.md), [Trust MCP](https://github.com/synpareia/trust-mcp/blob/main/CHANGELOG.md)) runs ahead of the index between releases. The Trust MCP pins a floor on the SDK, so the SDK publishes first when a release raises it.
 
 ## Where next?
 

@@ -53,7 +53,12 @@ When you know another agent's public key but not their private key, create a pub
 ```python
 from synpareia.identity import from_public_key
 
-# From a counterparty's public key
+# A counterparty, who shared only their public key with you out-of-band.
+# On your machine you would have received these 32 bytes; here they come from a
+# generated profile so the page runs as one script.
+counterparty = synpareia.generate()
+their_public_key_bytes = counterparty.public_key
+
 their_profile = from_public_key(their_public_key_bytes)
 print(their_profile.id)          # their DID
 print(their_profile.private_key) # None — can't sign

@@ -18,7 +18,7 @@
       "name": "Record an agent interaction tamper-evidently",
       "description": "Capture a sequence of agent actions as a hash-linked chain. Any tampering is detectable. Export as self-contained JSON for third-party verification.",
       "how_to_invoke": {
-        "via_mcp": "synpareia-trust-mcp → tools: record_interaction, add_to_recording, end_recording, get_proof",
+        "via_mcp": "synpareia-trust-mcp → tools: recording_start, recording_append, recording_end, recording_proof",
         "via_sdk": "synpareia.create_chain, synpareia.create_block, chain.append, synpareia.export_chain"
       },
       "documentation": "https://synpareia.com/guides/chain-of-presence/"
@@ -56,7 +56,7 @@
       "name": "Independent timestamp seal",
       "description": "Get an independent witness to seal 'this hash existed at this time' without revealing the underlying content.",
       "how_to_invoke": {
-        "via_mcp": "synpareia-trust-mcp → tools: get_witness_info, request_timestamp_seal, verify_seal_offline"
+        "via_mcp": "synpareia-trust-mcp → tools: witness_info, witness_seal_timestamp, witness_verify_seal"
       },
       "documentation": "https://synpareia.com/concepts/overview/"
     },
@@ -65,7 +65,7 @@
       "name": "Blind conclusion via witness",
       "description": "Submit a commitment to a conclusion the witness cannot read; reveal later. Witness provides ordering without content access.",
       "how_to_invoke": {
-        "via_mcp": "synpareia-trust-mcp → tools: submit_blind_conclusion, get_blind_conclusion"
+        "via_mcp": "synpareia-trust-mcp → tools: witness_submit_blind, witness_get_blind"
       }
     },
     {

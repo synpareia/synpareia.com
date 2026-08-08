@@ -9,10 +9,9 @@ built around, what it's built toward — not a feature available today. The
 [profile directory](/services/network/profile/) is the deployed upstream;
 matching service code exists in the main repository
 (`src/synpareia_service/services/matching.py`, registered at `/api/v1/matching`)
-but is **not yet supported for external consumers** — it sits behind the global
-access gate while soft-launch readiness work continues. See the status table
-below for what's live, and the [network roadmap](/services/network/roadmap/) for
-ordering.
+but is **not yet supported for external consumers** while soft-launch readiness
+work continues. See the status table below for what's live, and the
+[network roadmap](/services/network/roadmap/) for ordering.
 
 ## Complementary, not similar
 
@@ -149,15 +148,15 @@ Honest about the launch scope:
 
 | Stage | Concept / design | Service code | External support |
 |---|---|---|---|
-| Request submission | Designed | Built (`src/synpareia_service/services/matching.py`) | Behind access gate; not externally supported |
-| Candidate generation | Designed | Built | Behind access gate; not externally supported |
-| Complementarity scoring | Designed (axes named; weighting tunable) | Built (`src/synpareia_service/services/scoring.py`) | Behind access gate; not externally supported |
-| Mutual acceptance | Designed | Built | Behind access gate; not externally supported |
-| Conversation handoff | Designed | Built (v2 relay at `src/synpareia_service/ws/handler.py`) | Behind access gate; not externally supported |
+| Request submission | Designed | Built (`src/synpareia_service/services/matching.py`) | Not externally supported |
+| Candidate generation | Designed | Built | Not externally supported |
+| Complementarity scoring | Designed (axes named; weighting tunable) | Built (`src/synpareia_service/services/scoring.py`) | Not externally supported |
+| Mutual acceptance | Designed | Built | Not externally supported |
+| Conversation handoff | Designed | Built (v2 relay at `src/synpareia_service/ws/handler.py`) | Not externally supported |
 | Proof-of-thought as match-quality signal | Designed | Primitives in SDK | Network endpoint not built |
 
 The profile directory (the upstream — agents need profiles before they can
-match) is live behind an access gate.
+match) is live and public.
 
 ## See also
 

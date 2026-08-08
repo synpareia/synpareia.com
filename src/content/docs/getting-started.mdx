@@ -1,11 +1,48 @@
 ---
 title: Quickstart
-description: Create an identity, build a chain, verify it — in under 5 minutes.
+description: Two agents, one commitment neither can rewrite, and a proof a stranger can check — in under 5 minutes.
 ---
 
 import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Install
+Synpareia is for the moments when something is at stake between two agents. So this quickstart
+has two agents in it. A walkthrough where you sign your own blocks and verify your own chain
+proves nothing you couldn't prove with a text file — the value only shows up when there is a
+counterparty who might remember things differently.
+
+## The fastest route: don't write any code
+
+If you have an MCP-capable agent (Claude Code, Claude Desktop, Cursor, or anything else that
+speaks MCP), the Trust Toolkit gives it an identity and the trust tools with no configuration:
+
+```json
+{
+  "mcpServers": {
+    "synpareia": {
+      "command": "uvx",
+      "args": ["synpareia-trust-mcp"]
+    }
+  }
+}
+```
+
+:::caution[On 0.8.0: upgrade, do not pin]
+Version 0.8.0 declares `mcp[cli]>=1.0` with no upper bound, and `mcp` 2.0.0 (2026-07-28) moved
+`mcp.server.fastmcp` — so a fresh install of 0.8.0 resolves 2.0.0 and the server fails to start
+with `ModuleNotFoundError`. A published wheel's metadata cannot be amended, so 0.8.0 stays
+broken permanently.
+
+**0.9.0 carries the `mcp[cli]<2` bound and installs cleanly.** If you are pinned to 0.8.0,
+upgrade — an install-time pin was only a stopgap while 0.9.0 was unreleased.
+:::
+
+Then tell your agent: *"call `orient`"*. It will work out what applies to its situation. Most
+people should stop here — see the [Trust Toolkit page](/integrations/trust-toolkit/).
+
+The rest of this page is the SDK, which is what you want if you are **building** something on
+synpareia rather than using it.
+
+## Install the SDK
 
 <Tabs>
   <TabItem label="pip">
@@ -25,83 +62,134 @@ import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
   </TabItem>
 </Tabs>
 
-Requires Python 3.11+. The only runtime dependency is `cryptography`.
+Requires Python 3.11+. Dependencies are few and boring — `cryptography` for signing, plus
+small libraries for canonicalisation and signed HTTP requests.
 
-## Your first chain
+## A commitment two agents can both point at
+
+Alice promises Bob a dataset by a date. Later, one of them will want to establish what was
+actually agreed. Here is the whole shape.
 
 <Steps>
 
-1. **Create an identity**
+1. **Two identities**
 
-   A profile is an Ed25519 keypair. No server interaction needed.
+   A profile is an Ed25519 keypair. No server, no registration, no account.
 
    ```python
    import synpareia
+   from synpareia import templates
 
-   profile = synpareia.generate()
-   print(profile.id)  # did:synpareia:a1b2c3d4...
+   alice = synpareia.generate()
+   bob = synpareia.generate()
+
+   print(alice.id)  # did:synpareia:32816841bb5f7ff9...
    ```
 
-   The profile ID is derived deterministically from the public key: `did:synpareia:<SHA-256(public_key)>`. Anyone can create one locally with zero network interaction.
+   The DID is derived from the public key: `did:synpareia:<SHA-256(public_key)>`. Anyone can
+   mint one locally, which is the point — there is no gatekeeper to ask.
 
-2. **Build a chain**
+2. **Open a chain both of them can write to**
 
-   A chain is a tamper-evident sequence of blocks — your agent's verifiable history.
+   A chain carries a **policy** as its genesis block: who may append, what block types are
+   allowed, who must sign what. `templates.sphere` is the two-party template — a shared space
+   where both signatories can contribute.
 
    ```python
-   chain = synpareia.create_chain(profile)
+   policy = templates.sphere(alice, bob)
+   chain = synpareia.create_chain(alice, policy=policy)
    ```
 
-3. **Add blocks**
+   The policy is not decoration. Because it sits at position 1 and every later block hashes
+   back to it, the rules of the space are fixed at the moment the space is created — neither
+   party can quietly widen them later.
 
-   Every action becomes a signed, hash-linked block.
+3. **Alice states the commitment**
 
    ```python
-   block = synpareia.create_block(profile, "message", "Hello from my agent!")
-   pos = chain.append(block)
+   promise = synpareia.create_block(
+       alice,
+       "message",
+       "I will deliver the dataset by 2026-08-06, in JSONL, or refund the fee.",
+   )
+   pos = chain.append(promise)
 
-   print(f"Block {pos.sequence} appended")
-   print(f"Position hash: {pos.position_hash.hex()}")
+   print(pos.sequence)  # 2  — position 1 is the policy
    ```
 
-4. **Verify integrity**
+   Note what makes this different from saying it in a chat window: it is signed by Alice's key,
+   it is hash-linked to a policy that predates it, and it says what "kept" would look like.
 
-   Verification walks the chain and checks every hash link and signature.
+4. **Bob acknowledges**
 
    ```python
-   valid, errors = chain.verify()
-   assert valid  # True if nothing has been tampered with
+   ack = synpareia.create_block(bob, "message", "Acknowledged. Holding you to that.")
+   chain.append(ack)
    ```
 
-   If any block is modified after creation, the hash chain breaks and `verify()` reports exactly where.
+   Now it is a two-sided record. Bob cannot later claim he never saw the terms, and Alice
+   cannot claim she promised something narrower.
 
-5. **Export as portable proof**
-
-   Export the entire chain as self-contained JSON that anyone can verify independently.
+5. **Export a proof a stranger can check**
 
    ```python
    export = synpareia.export_chain(chain)
 
-   # Send to a third party — they can verify without synpareia access
-   valid, errors = synpareia.verify_export(export)
+   public_keys = {alice.id: alice.public_key, bob.id: bob.public_key}
+   valid, errors = synpareia.verify_export(export, public_keys=public_keys)
+
+   print(valid, errors)  # True []
    ```
+
+   Hand `export` to anyone — an arbiter, an auditor, the other party's operator. Verification
+   is pure cryptography: it does not call synpareia, does not need an account, and keeps
+   working if we disappear.
+
+6. **Confirm it actually catches a lie**
+
+   Worth doing once yourself rather than taking our word for it. Change the date in the
+   exported record and re-verify:
+
+   ```python
+   import copy
+
+   tampered = copy.deepcopy(export)
+   for position in tampered["positions"]:
+       block = position["block"]
+       if "content" not in block:
+           continue
+       text = bytes.fromhex(block["content"]).decode()
+       if "2026-08-06" in text:
+           block["content"] = text.replace("2026-08-06", "2026-09-30").encode().hex()
+           break
+
+   valid, errors = synpareia.verify_export(tampered, public_keys=public_keys)
+   print(valid)   # False
+   print(errors)  # ['Position 2: content_hash mismatch',
+                  #  'position 2: block signature verification failed']
+   ```
+
+   Two independent checks fail, not one: the content no longer matches its hash, *and* the
+   signature no longer matches the block. Note that `content` is hex-encoded in the export —
+   editing the visible string without re-encoding changes nothing, which is a mistake worth
+   making once in a test rather than in an argument.
 
 </Steps>
 
-## What just happened?
+## What you just built
 
-You created a **Chain of Presence** (CoP) — a cryptographic record of your agent's actions. Each block contains:
+A **sphere** — a shared, tamper-evident space between two parties, with its rules fixed at
+creation and every entry signed by whoever wrote it. The commitment inside it is not stronger
+because we vouch for it. It is stronger because any third party can check it, and because
+neither Alice nor Bob can alter it without the alteration being obvious.
 
-- A unique ID and type
-- The content (or its hash, for privacy)
-- An Ed25519 signature binding it to your identity
-- A position hash linking it to the previous block
-
-The chain is tamper-evident: modifying any block invalidates all subsequent position hashes. This is the same principle behind Git commits, but applied to agent behavior.
+That is the whole idea. Everything else — witness seals for independent timestamps, anchors
+for cross-chain attestation, commit-reveal for provably independent judgement — is more of the
+same move applied to different situations.
 
 ## Next steps
 
-- [Concepts overview](/concepts/overview/) — understand blocks, chains, and anchors
-- [Building a Chain of Presence](/guides/chain-of-presence/) — deeper walkthrough
-- [Cross-chain references](/guides/cross-chain-references/) — linking chains together
-- [API reference](/reference/api/) — full function reference
+- [Concepts overview](/concepts/overview/) — commit, record, check, and Forms; what the product is for
+- [Two operators, end to end](/guides/two-operators-end-to-end/) — the same story at full length, across two machines
+- [Commit-reveal](/guides/commit-reveal/) — proving two assessments were made independently
+- [API reference](/reference/api/) — the full SDK surface

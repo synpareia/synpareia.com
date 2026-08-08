@@ -36,15 +36,21 @@ This adds `aiosqlite` for async SQLite operations. Without it, chains use in-mem
 
 ```python
 import synpareia
-print(synpareia.__version__)  # 0.1.0
+from synpareia import templates
+
+print(synpareia.__version__)
 
 # Quick smoke test
 profile = synpareia.generate()
-chain = synpareia.create_chain(profile)
+chain = synpareia.create_chain(profile, policy=templates.cop(profile))
 block = synpareia.create_block(profile, "message", "test")
 chain.append(block)
-valid, _ = chain.verify()
-assert valid
+
+# `verify` needs the public keys of whoever signed the blocks. Without them it
+# returns False and tells you so — it will not silently claim a chain is fine
+# when it has checked no signatures.
+valid, errors = chain.verify(public_keys={profile.id: profile.public_key})
+assert valid, errors
 print("synpareia is working")
 ```
 

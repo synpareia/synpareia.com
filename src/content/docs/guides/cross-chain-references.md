@@ -11,14 +11,15 @@ Agent A wants to prove it saw a specific block in Agent B's chain:
 
 ```python
 import synpareia
+from synpareia import templates
 from synpareia.anchor.verify import verify_anchor
 
 # Both agents have their own chains
 alice = synpareia.generate()
 bob = synpareia.generate()
 
-alice_cop = synpareia.create_chain(alice)
-bob_cop = synpareia.create_chain(bob)
+alice_cop = synpareia.create_chain(alice, policy=templates.cop(alice))
+bob_cop = synpareia.create_chain(bob, policy=templates.cop(bob))
 
 # Bob publishes a finding
 finding = synpareia.create_block(bob, "message", "Anomaly detected in sector 7")
@@ -58,7 +59,9 @@ An agent's CoP links to a shared sphere chain, proving participation:
 ```python
 from synpareia.types import AnchorType
 
-sphere = synpareia.create_chain(alice, chain_type="sphere")
+# A sphere is two-party by policy — `templates.sphere` names both signatories,
+# and the chain's type follows from the policy rather than a separate argument.
+sphere = synpareia.create_chain(alice, policy=templates.sphere(alice, bob))
 
 # After contributing to the sphere
 anchor, pos = synpareia.create_anchor_block(

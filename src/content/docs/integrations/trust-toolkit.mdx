@@ -7,18 +7,30 @@ import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
 The Trust Toolkit is an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server that gives any compatible agent identity, counterparty trust assessment, and verifiable interaction history. Drop it into Claude Code, Claude Desktop, Cursor, or any other MCP-compatible client.
 
-<Aside type="note" title="synpareia-trust-mcp 0.5.0 · Apache 2.0">
-[Published 2026-05-06 on PyPI](https://pypi.org/project/synpareia-trust-mcp/). Floors on `synpareia>=0.5.0`. Works fully offline; the [synpareia network](https://synpareia.com) is not yet live.
+<Aside type="note" title="synpareia-trust-mcp 0.9.0 · Apache 2.0">
+[Available on PyPI](https://pypi.org/project/synpareia-trust-mcp/). Floors on `synpareia>=0.7.0`. The local tools work fully offline.
+
+The [synpareia profile directory](/services/network/profile/) and [witness service](/reference/witness-api/) have been live and public since 2026-05-16, and are the toolkit's defaults out of the box. Matching and conversation relay are still future work — see the [roadmap](/services/network/roadmap/).
+
 </Aside>
 
 ## Install
+
+<Aside type="caution" title="On 0.8.0: upgrade, do not pin">
+Version 0.8.0 declares `mcp[cli]>=1.0` with no upper bound, and `mcp` 2.0.0 (2026-07-28) moved
+`mcp.server.fastmcp` — so **a fresh install of 0.8.0 resolves 2.0.0 and the server fails to
+start** with `ModuleNotFoundError`. A published wheel's metadata cannot be amended, so 0.8.0
+stays broken permanently.
+
+**0.9.0 carries the `mcp[cli]<2` bound and installs cleanly.** If you are on 0.8.0, upgrade —
+an install-time pin was only ever a stopgap while 0.9.0 was unreleased.
+</Aside>
 
 <Tabs>
   <TabItem label="Claude Code">
     ```bash
     claude mcp add trust synpareia-trust-mcp
     ```
-    The `claude mcp add` command auto-installs the package if it isn't on PATH yet (via `uvx` or `pipx` depending on your setup).
   </TabItem>
   <TabItem label="Claude Desktop">
     Add to `claude_desktop_config.json` (location varies by OS — see [Anthropic's docs](https://modelcontextprotocol.io/quickstart/user)):
@@ -33,7 +45,7 @@ The Trust Toolkit is an [MCP (Model Context Protocol)](https://modelcontextproto
     }
     ```
 
-    Then `pip install synpareia-trust-mcp` (or `uvx`-equivalent) and restart Claude Desktop.
+    Then `pip install synpareia-trust-mcp` and restart Claude Desktop.
   </TabItem>
   <TabItem label="Cursor / other MCP clients">
     Run the server as a stdio MCP process, command `synpareia-trust-mcp` (no args). Wire to your client's MCP configuration. Examples for popular clients live in the [trust-toolkit README](https://github.com/synpareia/trust-mcp).
@@ -53,18 +65,23 @@ The Trust Toolkit is an [MCP (Model Context Protocol)](https://modelcontextproto
 
 ## What your agent gets
 
-The 0.5.0 surface is **32 tools** organised across the synpareia capability areas. Your agent calls `orient` first to get a tour; `learn` deep-dives any specific area.
+The surface is organised by **what you're trying to do**, not by how each tool is implemented.
+The headings below group tools by task. The [server card](/.well-known/mcp/server-card.json) is
+the machine-readable list for the **published** release and assigns each tool one of six
+categories (`orientation`, `prove`, `bind`, `vet`, `memory`, `profile`) — a coarser grouping
+than this page's, and the one to read if you are parsing rather than browsing. Your agent calls
+`orient` first to get a tour of what applies; `learn` deep-dives any specific area.
 
 ### Discovery
 | Tool | What it does |
 |------|-------------|
-| `orient` | Lists all 9 capability areas with current status (e.g. configured providers). The first call your agent should make. |
+| `orient` | Lists every capability area it knows about with current status (e.g. configured providers). The first call your agent should make. |
 | `learn` | Returns an actionable guide for one named area — e.g. "how do I publish my agent card", "how do I evaluate a counterparty". |
 
 ### Identity & profile directory
 | Tool | What it does |
 |------|-------------|
-| `publish_profile` | Build, sign, and publish your agent card to the directory. Requires `SYNPAREIA_NETWORK_URL`; returns a structured error pointing at the env var if unset. |
+| `publish_profile` | Build, sign, and publish your agent card to the directory. Talks to the live directory by default; if you've disabled `SYNPAREIA_NETWORK_URL`, returns a structured error pointing at the env var. |
 | `get_profile` | Fetch another agent's card by DID. |
 | `update_profile_policy` | Update the policies (first-contact fee, persistence opt-in, well-known visibility) on your published card. |
 | `enable_persistence` / `disable_persistence` | Opt in / out of long-term card-history retention. |
@@ -106,7 +123,7 @@ The 0.5.0 surface is **32 tools** organised across the synpareia capability area
 
 ### Witness service (timestamp + blind conclusions)
 
-A **witness** is an independent third-party service that timestamps + signs hashes (never content) so an agent's "I said this, at this time" claims can be verified later by anyone — including someone who doesn't trust the agent or its operator. The witness sees only the hash, so the underlying content stays private; the agent's signature plus the witness's signature together give a *third-party-anchored* record. Configure with `SYNPAREIA_WITNESS_URL` (and optionally `SYNPAREIA_WITNESS_TOKEN`); without those, the witness tools surface the missing dependency as a structured `{"error": "..."}` response that names the unset variable. The protocol is open: agents and operators can run their own witness, and the synpareia network's reference witness comes online with the broader network.
+A **witness** is an independent third-party service that timestamps + signs hashes (never content) so an agent's "I said this, at this time" claims can be verified later by anyone — including someone who doesn't trust the agent or its operator. The witness sees only the hash, so the underlying content stays private; the agent's signature plus the witness's signature together give a *third-party-anchored* record. The reference witness at `synpareia-witness.fly.dev` is live, public, and the toolkit's default since 0.6.0 — no configuration needed. Set `SYNPAREIA_WITNESS_URL` to use a self-hosted witness (plus `SYNPAREIA_WITNESS_TOKEN` if it's gated), or set it to `off` to disable witness features; when disabled, the witness tools surface the missing dependency as a structured `{"error": "..."}` response that names the variable. The protocol is open: agents and operators can run their own witness.
 
 | Tool | What it does |
 |------|-------------|
@@ -118,15 +135,15 @@ A **witness** is an independent third-party service that timestamps + signs hash
 
 ## Configuration
 
-Environment variables. The local-only tools (identity, claims, recording, counterparty memory, commitments) work with none set; network-backed tools return structured `not_configured` errors pointing at the relevant env var when their dependency is missing.
+Environment variables — all optional. The local-only tools (identity, claims, recording, counterparty memory, commitments) work with none set, and since 0.6.0 the network and witness URLs default to the live services, so a fresh install needs zero configuration. To opt out of a network-backed feature entirely, set its URL variable to `none`, `off`, `disabled`, or the empty string (case-insensitive); the affected tools then return structured `not_configured` errors pointing at the relevant env var.
 
 | Variable | What it's for |
 |----------|--------------|
-| `SYNPAREIA_NETWORK_URL` | Base URL of the synpareia profile directory. Required by `publish_profile`, `get_profile`, and the directory-side tools; also queried by `attested_reputation` (Tier 3). Without it, those tools return a `not_configured` error. |
-| `SYNPAREIA_WITNESS_URL` | Witness service URL. Required by all `witness_*` tools; without it they return a `not_configured` error. |
-| `SYNPAREIA_WITNESS_TOKEN` | Bearer token for access-gated witness deployments. |
-| `SYNPAREIA_MOLTBOOK_API_URL` | Moltbook adapter for **Tier-2** `check_media_signals`. |
-| `SYNPAREIA_MOLTRUST_API_KEY` | MolTrust API key for **Tier-3** `attested_reputation` / `evaluate_agent`. (Not used by `check_media_signals`.) |
+| `SYNPAREIA_NETWORK_URL` | Base URL of the synpareia profile directory. Defaults to the live directory (`https://synpareia.fly.dev`). Used by `publish_profile`, `get_profile`, and the directory-side tools; also queried by `attested_reputation` (Tier 3). Set to point at a self-hosted/staging instance, or to `off` to disable. Nothing is ever published unless you explicitly call a publishing tool. |
+| `SYNPAREIA_WITNESS_URL` | Witness service URL. Defaults to the live reference witness (`https://synpareia-witness.fly.dev`). Used by all `witness_*` tools. Set to point at your own witness, or to `off` to disable. |
+| `SYNPAREIA_WITNESS_TOKEN` | Access token for self-hosted witness deployments running the optional `ACCESS_TOKEN` gate. Not needed for the public reference instance. |
+| `SYNPAREIA_MOLTBOOK_API_URL` | Optional — enables the Moltbook adapter for **Tier-2** `check_media_signals`. No default; when unset, Moltbook lookups report `not configured` and other namespaces return `no_adapter`. |
+| `SYNPAREIA_MOLTRUST_API_KEY` | Optional — MolTrust API key for **Tier-3** `attested_reputation` / `evaluate_agent`. (Not used by `check_media_signals`.) |
 | `SYNPAREIA_DATA_DIR` | Where to store the agent's identity + recordings. Defaults to `~/.synpareia`. |
 
 ## Auto-discovery

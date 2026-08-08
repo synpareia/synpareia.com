@@ -10,9 +10,10 @@ Any synpareia chain can be exported as a self-contained JSON document. The expor
 ```python
 import synpareia
 import json
+from synpareia import templates
 
 profile = synpareia.generate()
-chain = synpareia.create_chain(profile)
+chain = synpareia.create_chain(profile, policy=templates.cop(profile))
 
 # Add some blocks
 for i in range(5):
@@ -29,6 +30,10 @@ with open("attestation.json", "w") as f:
 
 ## Export format
 
+Two things surprise people, so they are shown rather than described: **sequence 1 is the
+policy genesis block**, not your first message — the chain's rules are the first thing in it —
+and **`content` is hex-encoded**, because a block's content is bytes and JSON has no byte type.
+
 ```json
 {
   "version": "1.0",
@@ -41,21 +46,40 @@ with open("attestation.json", "w") as f:
       "sequence": 1,
       "block": {
         "id": "blk_...",
-        "type": "message",
+        "type": "policy",
         "author_id": "did:synpareia:e5f6...",
-        "content": "Action 1",
-        "content_hash": "abcd1234...",
-        "created_at": "2026-04-13T10:00:01+00:00",
+        "content_hash": "04ab2fdf...",
+        "created_at": "2026-04-13T10:00:00+00:00",
+        "metadata": {},
+        "content": "7b2261637469766174696f6e5f74696d656f75745f64617973...",
         "signature": "..."
       },
       "parent_hash": null,
       "position_hash": "..."
+    },
+    {
+      "sequence": 2,
+      "block": {
+        "id": "blk_...",
+        "type": "message",
+        "author_id": "did:synpareia:e5f6...",
+        "content_hash": "6e97f7e7...",
+        "created_at": "2026-04-13T10:00:01+00:00",
+        "metadata": {},
+        "content": "416374696f6e2031",
+        "signature": "..."
+      },
+      "parent_hash": "5222caad...",
+      "position_hash": "..."
     }
   ],
   "head_hash": "...",
-  "metadata": {}
+  "metadata": {},
+  "policy_hash": "..."
 }
 ```
+
+`bytes.fromhex(block["content"]).decode()` on that second block gives `Action 1`.
 
 ## Privacy-preserving export
 
@@ -69,7 +93,10 @@ export = synpareia.export_chain(chain, include_content=False)
 
 ## Independent verification
 
-Anyone with the export file can verify it:
+Verification needs two things: the export file, and the **public keys of whoever signed the
+blocks**. The export deliberately does not carry them — a chain that shipped its own verifying
+keys would let whoever produced the file choose which keys it is checked against. Publish them
+alongside the export, or resolve them from the authors' profiles.
 
 ```python
 import synpareia
@@ -78,13 +105,24 @@ import json
 with open("attestation.json") as f:
     export = json.load(f)
 
-valid, errors = synpareia.verify_export(export)
+# The verifier assembles this from keys it obtained independently — published
+# alongside the export, or resolved from each author's profile. Here the chain has a
+# single author, so it is one entry.
+author_keys = {profile.id: profile.public_key}
+
+# `public_keys` maps author id -> public key. Without it, verify_export returns
+# False and says so, rather than reporting a chain as sound having checked no
+# signatures.
+valid, errors = synpareia.verify_export(export, public_keys=author_keys)
 if valid:
     print(f"Chain verified: {len(export['positions'])} blocks, integrity intact")
 else:
     for error in errors:
         print(f"Verification failed: {error}")
 ```
+
+No network call and no synpareia service is involved — but "self-contained" means the *file*
+needs no external lookup for its hash chain, not that signatures verify without keys.
 
 Verification checks:
 - Every position hash recomputes correctly from the block data

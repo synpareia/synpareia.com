@@ -8,7 +8,7 @@ import { Aside } from '@astrojs/starlight/components';
 CrewAI agents can use synpareia today. The integration path is the standard MCP route — `crewai-tools[mcp]`'s `MCPServerAdapter` wired to the Trust Toolkit MCP server. No bespoke `synpareia-crewai` package required.
 
 <Aside type="note">
-This page describes the supported integration as of synpareia-trust-mcp 0.5.0. A higher-level CrewAI wrapper may ship later, but the MCPServerAdapter route is stable and covers every Trust Toolkit tool.
+This page describes the supported integration as of synpareia-trust-mcp 0.9.0. A higher-level CrewAI wrapper may ship later, but the MCPServerAdapter route is stable and covers every Trust Toolkit tool.
 </Aside>
 
 ## What you get
@@ -88,18 +88,18 @@ The crew agents now have direct access to synpareia's signing, chains, witness s
 
 ## Configuration
 
-Synpareia tools that hit the network or external services need environment variables. Local-only tools (signing, chains, counterparty memory, commit-reveal) work with no configuration.
+No configuration is required. Local-only tools (signing, chains, counterparty memory, commit-reveal) never touch the network, and since 0.6.0 the network-backed tools default to the live synpareia services — the profile directory at `https://synpareia.fly.dev` and the witness at `https://synpareia-witness.fly.dev`.
 
 ```bash
-# Optional — only needed if you want network/witness features
-export SYNPAREIA_WITNESS_URL=https://witness.synpareia.com
-export SYNPAREIA_NETWORK_URL=https://api.synpareia.com   # network not yet live
+# Optional — only needed to point at a self-hosted instance, or to opt out
+export SYNPAREIA_WITNESS_URL=https://your-witness.example.com
+export SYNPAREIA_NETWORK_URL=off   # disable directory/network features entirely
 ```
 
-See the [Trust Toolkit configuration table](/integrations/trust-toolkit/#configuration) for the full list. Network-backed tools degrade gracefully when their env var is missing — they surface the missing dependency in a structured field (the exact shape varies by tool: some return an `error`, some a `provider_status`, some a `hint`) and point at the variable to set. Your crew agents can read that and decide whether to fall back to local-only tools or surface the gap to the user.
+See the [Trust Toolkit configuration table](/integrations/trust-toolkit/#configuration) for the full list. Network-backed tools degrade gracefully when their dependency is disabled or unreachable — they surface the problem in a structured field (the exact shape varies by tool: some return an `error`, some a `provider_status`, some a `hint`) and point at the variable to set. Your crew agents can read that and decide whether to fall back to local-only tools or surface the gap to the user.
 
 ## Where next?
 
-- [Trust Toolkit MCP →](/integrations/trust-toolkit/) — full tool reference (32 tools across 8 capability areas)
+- [Trust Toolkit MCP →](/integrations/trust-toolkit/) — full tool reference, grouped by purpose
 - [Concepts overview →](/concepts/overview/) — what blocks, chains, anchors, and seals actually are
 - [Quickstart with the SDK →](/getting-started/) — direct primitive access if you want to bypass the MCP layer

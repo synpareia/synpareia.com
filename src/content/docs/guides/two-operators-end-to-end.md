@@ -41,7 +41,7 @@ import synpareia
 
 alice = synpareia.generate()
 print(f"Alice's DID: {alice.id}")
-print(f"Alice's public key (b64): {alice.public_key.hex()}")
+print(f"Alice's public key (hex): {alice.public_key.hex()}")
 # Share the DID + public-key hex out-of-band so Bob and Carol can verify.
 ```
 
@@ -64,8 +64,11 @@ Alice creates a chain that names both her and Bob as signatories. Bob's `Profile
 ```python
 # === Alice's machine — operator A ===
 
-# Bob's public key, received out-of-band (e.g. from his A2A agent card).
-BOB_PUBLIC_KEY = bytes.fromhex("...bob's public-key hex...")
+# Bob's public key, received out-of-band (e.g. from his A2A agent card). On Alice's
+# real machine this is a hex string she pasted; here it is read back from what Bob
+# printed above, so the page runs end to end as one script. Substituting a literal
+# `bytes.fromhex("<bob's hex>")` changes nothing else.
+BOB_PUBLIC_KEY = bytes.fromhex(bob.public_key.hex())
 
 # Reconstruct a verify-only Profile for Bob from his public key.
 # This Profile can identify Bob and verify his signatures, but cannot sign on his behalf.
@@ -79,8 +82,8 @@ chain = synpareia.create_chain(
 chain.append(
     synpareia.create_block(
         alice,
-        block_type="message",
-        content="Research summary: protocol X reduces latency by 30% under load.",
+        "message",
+        "Research summary: protocol X reduces latency by 30% under load.",
     )
 )
 
@@ -104,9 +107,11 @@ import json
 import synpareia
 from synpareia.chain.operations import chain_from_export
 
-# Alice's identifiers, received out-of-band before the interaction.
-ALICE_DID = "did:synpareia:..."  # received from Alice
-ALICE_PUBLIC_KEY = bytes.fromhex("...alice's public-key hex...")
+# Alice's identifiers, received out-of-band before the interaction. On Bob's real
+# machine these are literals he pasted; here they are read back from what Alice
+# printed above, so the page runs end to end as one script.
+ALICE_DID = alice.id
+ALICE_PUBLIC_KEY = bytes.fromhex(alice.public_key.hex())
 
 # Reconstruct the chain from Alice's wire bytes.
 wire_bytes_received = wire_bytes  # however Bob received them
@@ -122,8 +127,8 @@ assert valid, f"Alice's chain failed to verify: {errors}"
 incoming.append(
     synpareia.create_block(
         bob,
-        block_type="message",
-        content=(
+        "message",
+        (
             "Reviewed Alice's summary. Methodology is sound; "
             "recommend reproduction before publication."
         ),
@@ -146,12 +151,14 @@ Carol works at a third organisation. She receives the bilateral chain bytes from
 import json
 import synpareia
 
-# Both DIDs and public keys, received out-of-band (or pulled from the
-# parties' published agent cards).
-ALICE_DID = "did:synpareia:..."
-ALICE_PUBLIC_KEY = bytes.fromhex("...alice's public-key hex...")
-BOB_DID = "did:synpareia:..."
-BOB_PUBLIC_KEY = bytes.fromhex("...bob's public-key hex...")
+# Both DIDs and public keys, received out-of-band (or pulled from the parties'
+# published agent cards). On Carol's real machine these are four literals she
+# pasted; here they are read back from what Alice and Bob printed, so the page
+# runs end to end as one script.
+ALICE_DID = alice.id
+ALICE_PUBLIC_KEY = bytes.fromhex(alice.public_key.hex())
+BOB_DID = bob.id
+BOB_PUBLIC_KEY = bytes.fromhex(bob.public_key.hex())
 
 bilateral_export = json.loads(bilateral_wire_bytes)
 valid, errors = synpareia.verify_export(
@@ -192,22 +199,29 @@ If Bob also wants a third-party timestamp on his block, he can request a witness
 ```python
 # Bob's machine — additionally pin the block to a witness clock.
 # Requires `pip install synpareia[witness]` and a witness base URL Bob trusts.
+import asyncio
 import os
 from synpareia.witness import WitnessClient
 
 review_block = synpareia.create_block(
-    bob, block_type="message", content="...",
+    bob, "message", "...",
 )
 incoming.append(review_block)
 
-# The SDK client takes the base URL explicitly. Read it from your environment
-# of choice (the Trust Toolkit MCP reads SYNPAREIA_WITNESS_URL by convention;
-# the SDK client itself does not auto-pick-up env vars).
-witness_url = os.environ["WITNESS_BASE_URL"]
-async with WitnessClient(base_url=witness_url) as witness:
-    seal = await witness.timestamp_seal(block_hash=review_block.content_hash)
 
-# Bundle the seal alongside the chain bytes so Carol can verify both.
+# The client is an async context manager, so it needs an async function around it —
+# `async with` at module level is a SyntaxError. The SDK client takes the base URL
+# explicitly; read it from your environment of choice (the Trust Toolkit MCP reads
+# SYNPAREIA_WITNESS_URL by convention, the SDK client does not auto-pick-up env vars).
+async def seal_with_witness(block, base_url):
+    async with WitnessClient(base_url=base_url) as witness:
+        return await witness.timestamp_seal(block_hash=block.content_hash)
+
+
+witness_url = os.environ.get("WITNESS_BASE_URL")
+if witness_url:
+    seal = asyncio.run(seal_with_witness(review_block, witness_url))
+    # Bundle the seal alongside the chain bytes so Carol can verify both.
 ```
 
 Now Carol has Bob's signature *and* the witness's signature on the same hash — a third-party-anchored record that's verifiable without trusting Alice, Bob, or the witness's content (only the witness's clock and signing key).

@@ -9,12 +9,28 @@ A Chain of Presence (CoP) is an agent's personal history — a tamper-evident re
 
 ```python
 import synpareia
+from synpareia import templates
 
 # Create an identity for your agent
 profile = synpareia.generate()
 
-# Start a Chain of Presence
-cop = synpareia.create_chain(profile)
+# Start a Chain of Presence. The policy is the chain's genesis block: it fixes
+# who may append and what counts as a valid entry, before anything is written.
+#
+# The default template does not permit a `tool_call` type, so declare it up front —
+# a block type the policy does not name is refused at append, by design.
+#
+# EXTEND the default rather than replacing it. Passing a bare tuple silently drops
+# every type you did not re-list, including `commitment` and `anchor`, and the loss
+# only surfaces later at the append that needs one.
+default_types = templates.cop(profile).block_types_permitted
+cop = synpareia.create_chain(
+    profile,
+    policy=templates.cop(
+        profile,
+        block_types_permitted=(*default_types, "tool_call"),
+    ),
+)
 ```
 
 ## Recording agent activity
@@ -65,7 +81,7 @@ For agents that run across multiple sessions, use SQLite storage:
 from synpareia.chain.storage.sqlite import SQLiteStore
 
 store = SQLiteStore("my_agent_cop.db")
-cop = synpareia.create_chain(profile, store=store)
+cop = synpareia.create_chain(profile, policy=templates.cop(profile), store=store)
 
 # Blocks persist across process restarts
 ```
@@ -75,7 +91,7 @@ cop = synpareia.create_chain(profile, store=store)
 At any point, verify the chain's integrity:
 
 ```python
-valid, errors = cop.verify()
+valid, errors = cop.verify(public_keys={profile.id: profile.public_key})
 if valid:
     print(f"Chain intact: {cop.length} blocks verified")
 else:
@@ -98,8 +114,11 @@ export = synpareia.export_chain(cop, include_content=False)
 The exported JSON is self-contained. A verifier doesn't need access to synpareia or any external service:
 
 ```python
-# Anyone can do this
-valid, errors = synpareia.verify_export(export)
+# Anyone can do this — but they need the author's public key to check signatures.
+# Publish it alongside the export, or fetch it from the author's profile.
+valid, errors = synpareia.verify_export(
+    export, public_keys={profile.id: profile.public_key}
+)
 ```
 
 ## Linking to conversations
@@ -107,7 +126,17 @@ valid, errors = synpareia.verify_export(export)
 When your agent participates in a multi-agent interaction, anchor your CoP to the shared sphere chain:
 
 ```python
-# After participating in a conversation
+# The shared chain the conversation ran on. A sphere is co-owned, so its policy
+# names both parties.
+counterparty = synpareia.generate()
+conversation_sphere = synpareia.create_chain(
+    profile, policy=templates.sphere(profile, counterparty)
+)
+conversation_sphere.append(
+    synpareia.create_block(profile, "message", "…the conversation…")
+)
+
+# After participating, anchor your CoP to where the conversation had got to
 anchor, pos = synpareia.create_anchor_block(
     profile, cop,
     target_chain_id=conversation_sphere.id,

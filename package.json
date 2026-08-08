@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/emit-markdown-sidecars.mjs",
+    "build": "astro build && node scripts/emit-markdown-sidecars.mjs && node scripts/mirror-well-known.mjs",
     "preview": "astro preview",
     "check": "astro check"
   },

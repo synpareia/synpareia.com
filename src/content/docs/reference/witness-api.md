@@ -12,11 +12,12 @@ and [Run your own witness](/guides/self-hosted-witness/).
 ## Base URL
 
 Reference instance: `https://synpareia-witness.fly.dev`
-(access-gated pre-launch — see Auth below).
+(public — anonymous access, no token; see Auth below).
 
 Self-hosted instances follow the same path layout. Set
-`SYNPAREIA_WITNESS_URL` (and `SYNPAREIA_WITNESS_ACCESS_TOKEN` if access-gated)
-to point the SDK at your deployment. See [Run your own witness](/guides/self-hosted-witness/).
+`SYNPAREIA_WITNESS_URL` (and `SYNPAREIA_WITNESS_TOKEN` if your
+deployment is access-gated) to point the SDK at your deployment.
+See [Run your own witness](/guides/self-hosted-witness/).
 
 ## Conventions
 
@@ -38,17 +39,19 @@ signature.
 
 ## Auth
 
-The reference instance requires a shared-secret header on every request
-except `/health` and `/health/ready`:
+The reference instance is public: anonymous access, no credentials on any
+endpoint. Self-hosted deployments can enable an optional shared-secret gate
+by setting `ACCESS_TOKEN`; gated instances then require this header on every
+request except `/health` and `/health/ready`:
 
 ```
 X-Access-Token: <token>
 ```
 
-Missing or invalid token returns `403`. Self-hosted instances omit this
-header when `ACCESS_TOKEN` is unset. There is no per-caller identity at the
-HTTP layer — the witness is a sparse attester; DIDs in request bodies
-(challenges, conclusions) are protocol record, not transport auth.
+On gated instances, a missing or invalid token returns `403`. There is no
+per-caller identity at the HTTP layer — the witness is a sparse attester;
+DIDs in request bodies (challenges, conclusions) are protocol record, not
+transport auth.
 
 ## Rate limits
 
@@ -71,7 +74,7 @@ extraction lands.
 | Status | Cause |
 |---|---|
 | `400` | JSON nesting depth exceeded |
-| `403` | Missing or invalid `X-Access-Token` |
+| `403` | Missing or invalid `X-Access-Token` (gated self-hosted deployments only) |
 | `404` | Unknown seal / conclusion / challenge id |
 | `413` | Request body exceeds 256 KiB |
 | `422` | Validation failure (bad hex, bad DID, oversize field, malformed base64) |
@@ -181,6 +184,15 @@ same `conclusion_key`; the witness signs each commitment with a timestamp
 seal and marks the conclusion `ready` once both have submitted. The witness
 never sees the conclusion content.
 
+> **Identity binding is self-asserted in v1.** The `requester_id` you submit
+> is recorded verbatim — the witness does not verify that the caller controls
+> that DID's key, so any caller can occupy a party slot under any DID. What a
+> blind-conclusion seal proves is *that a commitment hash existed at a time,
+> attributed to a claimed identity* — not that the claimed identity made it.
+> If party authenticity matters, verify DID control at another layer (e.g.
+> signed blocks exchanged between the parties whose hashes are what you
+> commit). Cryptographic identity binding is Witness Phase 2 (roadmapped).
+
 ### `POST /api/v1/conclusions`
 Submit one party's commitment. Idempotent for the same party; rejects a
 third distinct party.
@@ -228,9 +240,20 @@ to the commitments and their first-in-time ordering.
 
 ## Liveness challenges
 
-Proves a DID is currently online and controls its key. The witness issues a
-nonce; the responder embeds it in a fresh block; the witness checks the
-deadline and seals the response block.
+Proves *someone* was online and produced a fresh block embedding the
+witness's nonce within the deadline. The witness issues a nonce; the
+responder embeds it in a fresh block; the witness checks the deadline and
+seals the response block.
+
+> **Identity binding is self-asserted in v1.** The witness checks the nonce,
+> the deadline, and that the response's `requester_id` matches the
+> `target_id` declared at issuance — but it does **not** verify that the
+> responder controls the target DID's key. Anyone who knows the
+> `challenge_id` can answer by claiming to be the target DID. To make a
+> liveness proof identity-bearing today, independently verify that the
+> response block is signed by the target DID's key (the SDK's `verify_block`
+> with the DID's public key). Cryptographic identity binding at the witness
+> layer is Phase 2 (roadmapped).
 
 ### `POST /api/v1/challenges`
 Issue a challenge for a target DID.

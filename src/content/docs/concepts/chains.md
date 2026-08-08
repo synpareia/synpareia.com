@@ -9,9 +9,13 @@ A chain is an ordered, hash-linked sequence of blocks. It's the core data struct
 
 ```python
 import synpareia
+from synpareia import templates
 
 profile = synpareia.generate()
-chain = synpareia.create_chain(profile)
+
+# Every chain carries a policy as its genesis block — who may append, which block
+# types are allowed, who must sign. `templates.cop` is the single-owner default.
+chain = synpareia.create_chain(profile, policy=templates.cop(profile))
 ```
 
 Every chain has an owner (the profile that created it), a type, and a unique ID.
@@ -22,7 +26,7 @@ Every chain has an owner (the profile that created it), a type, and a unique ID.
 block = synpareia.create_block(profile, "message", "First action")
 pos = chain.append(block)
 
-print(pos.sequence)       # 1
+print(pos.sequence)       # 2 — position 1 is the chain's POLICY block
 print(pos.position_hash)  # bytes — the hash linking this position to the chain
 ```
 
@@ -41,7 +45,7 @@ Because each position hash includes the previous position's hash (`parent_hash`)
 ## Verification
 
 ```python
-valid, errors = chain.verify()
+valid, errors = chain.verify(public_keys={profile.id: profile.public_key})
 if not valid:
     for error in errors:
         print(f"Integrity violation: {error}")
@@ -62,14 +66,22 @@ Verification walks the entire chain and checks:
 | `audit` | Audit trail for a specific process |
 | Custom | Any string — application-specific chains |
 
+The chain's type comes from its **policy**, not from a separate argument — the type and
+the rules that go with it are one decision, so they are set in one place.
+
 ```python
-from synpareia.types import ChainType
+from synpareia import templates
 
-# Explicit chain type
-chain = synpareia.create_chain(profile, chain_type=ChainType.SPHERE)
+# A two-party sphere: both signatories may append.
+counterparty = synpareia.generate()
+chain = synpareia.create_chain(
+    profile, policy=templates.sphere(profile, counterparty)
+)
 
-# Custom type
-chain = synpareia.create_chain(profile, chain_type="crew_execution")
+# An application-specific type, on otherwise single-owner rules.
+chain = synpareia.create_chain(
+    profile, policy=templates.cop(profile, chain_type="crew_execution")
+)
 ```
 
 ## Querying
@@ -100,7 +112,7 @@ Chains need somewhere to store their blocks and positions.
 Fast, ephemeral. Data is lost when the process exits.
 
 ```python
-chain = synpareia.create_chain(profile)  # uses MemoryStore
+chain = synpareia.create_chain(profile, policy=templates.cop(profile))  # uses MemoryStore
 ```
 
 ### SQLite
@@ -110,7 +122,7 @@ Persistent storage using SQLite. Install with `pip install synpareia[sqlite]`.
 from synpareia.chain.storage.sqlite import SQLiteStore
 
 store = SQLiteStore("chains.db")
-chain = synpareia.create_chain(profile, store=store)
+chain = synpareia.create_chain(profile, policy=templates.cop(profile), store=store)
 # Data persists across process restarts
 ```
 

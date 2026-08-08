@@ -90,11 +90,11 @@ If the loop exits without `/health` responding, check `fly logs -a your-witness`
 
 ## Deploying elsewhere
 
-The `Dockerfile` is the canonical reference and runs anywhere a container does: Python 3.12 slim, non-root `appuser`, `/data` for SQLite + key fallback, `uvicorn` on `0.0.0.0:8000` with `--no-server-header`, `/health` HTTP healthcheck. Kubernetes, a plain VPS with `docker compose`, ECS, Cloud Run — all viable. You'll need a persistent volume mounted at `/data` (or an external Postgres), the env vars above, and an ingress that gates everything except `/health`. Don't run two replicas against the same SQLite volume; either pick one or move to Postgres.
+The `Dockerfile` is the canonical reference and runs anywhere a container does: Python 3.12 slim, non-root `appuser`, `/data` for SQLite + key fallback, `uvicorn` on `0.0.0.0:8000` with `--no-server-header`, `/health` HTTP healthcheck. Kubernetes, a plain VPS with `docker compose`, ECS, Cloud Run — all viable. You'll need a persistent volume mounted at `/data` (or an external Postgres), the env vars above, and an ingress that matches your chosen access posture (see below). Don't run two replicas against the same SQLite volume; either pick one or move to Postgres.
 
 ## Access-gate posture
 
-Synpareia's deployment posture is gated-by-default. If your witness is reachable from the public internet, it should sit behind either a shared-secret middleware, private networking, or an identity-bound proxy. The built-in `ACCESS_TOKEN` middleware (in `witness/src/witness/main.py`) is the simplest option — set the env var and every non-health request needs an `X-Access-Token` header. Your own ingress / WAF / mTLS layer works equally well, as does running the witness behind a private network like Tailscale or a WireGuard mesh.
+You choose your witness's access posture. The synpareia reference instance runs fully public (rate-limited, no token) — that's the right posture for a witness meant to serve arbitrary agents. A self-hosted witness serving a closed set of consumers may prefer to restrict who can submit: a shared-secret middleware, private networking, or an identity-bound proxy all work. The built-in `ACCESS_TOKEN` middleware (in `witness/src/witness/main.py`) is the simplest option — set the env var and every non-health request needs an `X-Access-Token` header. Your own ingress / WAF / mTLS layer works equally well, as does running the witness behind a private network like Tailscale or a WireGuard mesh.
 
 Two notes on the access gate:
 
@@ -128,16 +128,27 @@ The whole point of a witness seal is that a third party can verify it without co
 
 ```python
 import synpareia
-from synpareia.seal import SealPayload
+from synpareia.seal import SealType, create_seal
 from synpareia.seal.verify import verify_seal, verify_seal_block
 
 # 1. The consumer has these three things:
 #    - The seal envelope (as bytes, or as a SealPayload)
 #    - Your witness's public key (32 raw bytes)
 #    - Optionally, the original block hash they want to confirm
+#
+# So that this snippet runs as-is, we mint a seal here the way your witness
+# would. In real use you receive `seal` from whoever is showing it to you, and
+# `your_witness_public_key` from the operator's out-of-band key record — you do
+# NOT generate either one yourself.
+witness_identity = synpareia.generate()
+your_witness_public_key = witness_identity.public_key
 
-your_witness_public_key = bytes.fromhex(
-    "abcd...your-32-byte-public-key-in-hex..."
+expected_hash = synpareia.content_hash(b"the content they're verifying")
+seal = create_seal(
+    witness_identity.private_key,
+    "did:synpareia:your-witness",
+    SealType.TIMESTAMP,
+    target_block_hash=expected_hash,
 )
 
 # 2. Verify the signature only — does this seal genuinely come from
@@ -149,7 +160,6 @@ if not ok:
 # 3. Verify that the seal covers the *specific* block hash they expected.
 #    This is the load-bearing check: a valid seal over the wrong hash
 #    is useless.
-expected_hash = synpareia.content_hash(b"the content they're verifying")
 ok, err = verify_seal_block(
     seal,
     your_witness_public_key,

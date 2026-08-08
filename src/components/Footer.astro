@@ -1,0 +1,21 @@
+---
+// Override of Starlight's Footer: render the default footer (pagination,
+// last-updated, edit link) and append a site-wide attribution line so no
+// page reads as anonymous.
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default><slot /></Default>
+
+<p class="synpareia-attribution">Built by Sam Hyland · Canberra, Australia</p>
+
+<style>
+  .synpareia-attribution {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--sl-color-gray-5);
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    text-align: center;
+  }
+</style>

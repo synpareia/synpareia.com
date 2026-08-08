@@ -1,9 +1,50 @@
 ---
 title: Overview
-description: The core concepts behind synpareia — blocks, chains, anchors, and seals.
+description: What synpareia is for — commitments, records, checks and Forms — and the cryptographic primitives underneath them.
 ---
 
-Synpareia is a set of cryptographic primitives for building verifiable agent histories. Everything is built from four concepts:
+Synpareia is infrastructure for the moments when something is at stake between two agents.
+
+Agents increasingly delegate to each other, rely on each other, and transact. What they lack is
+any way to tell an agent that keeps its word from one that does not — and any way to make a
+promise that is more than a sentence. The usual fix is a platform that keeps score, which makes
+the platform the arbiter of who is trustworthy. Synpareia takes the other route: make the
+**evidence** portable and checkable by anyone, so no arbiter is needed.
+
+## The four things you actually do
+
+**Commit.** State an intention in a form neither side can later quietly revise. A commitment you
+both signed is a different object from one you both remember — it has a timestamp that predates
+the outcome, and it says what "kept" would look like.
+
+**Record.** Open a tamper-evident record *while* an interaction happens, not after. Both parties
+can contribute; either can later export a portable proof that anyone can verify. A reconstructed
+account is worth far less than a contemporaneous signed one, and the difference is legible to a
+third party rather than a matter of who sounds more credible.
+
+**Check.** Before relying on a counterparty, look at what is actually known about them: your own
+prior dealings, attestations they can hand you, and signals from elsewhere. Often the honest
+answer is "nothing" — which is useful, because it tells you to ask for a commitment rather than
+proceed on goodwill.
+
+**Follow a Form.** Some interaction shapes are well understood and easy to get wrong — escrow,
+a trial period, a precommitment, a prediction you want believed later. A **Form** is a worked
+recipe for one of these: the phases, who does what, where trust sits, and how it can be gamed.
+You do not have to invent the choreography.
+
+The Manual of Forms is not published on this site yet, and the Forms guides are not in the
+currently-released Trust Toolkit either — they land in the next release. Until then, treat the
+four moves above as the working vocabulary: a Form is a named, reusable arrangement of them.
+
+## Where the cryptography sits
+
+Everything above rests on four primitives. You rarely need to think in them — the tools are named
+for the social act — but they are what makes the guarantees real, and you need them if you are
+building on synpareia rather than using it.
+
+The one property worth carrying with you: **anything synpareia produces verifies offline,
+forever.** A proof is pure cryptography. It does not call home, does not need an account, and
+does not stop working if synpareia does.
 
 ## Blocks
 

@@ -13,9 +13,10 @@ Agent A and Agent B evaluate each other after a conversation. If A sees B's eval
 
 ```python
 import synpareia
+from synpareia import templates
 
 profile = synpareia.generate()
-chain = synpareia.create_chain(profile)
+chain = synpareia.create_chain(profile, policy=templates.cop(profile))
 
 # Step 1: Agent commits to an evaluation (publishes only the hash)
 evaluation = b"Productive conversation. Rating: 4/5."
@@ -27,10 +28,17 @@ chain.append(commitment_block)
 
 # ... time passes, other agent also commits ...
 
-# Step 2: Both agents reveal
-revealed = synpareia.reveal_block(commitment_block, evaluation)
-# If the content doesn't match the committed hash, this raises ValueError
+# Step 2: Both agents reveal — publish the content and the nonce. The block's own
+# content IS the commitment hash, so anyone holding the block can recheck it.
+assert synpareia.verify_commitment(commitment_block.content, evaluation, nonce)
+print("commitment verified: the evaluation was fixed before either side revealed")
 ```
+
+`verify_commitment` returns a bool and uses a constant-time comparison. It is the reveal
+step — not `reveal_block`, which fills in a *hash-only* block's withheld content and is a
+different mechanism: a commitment block already carries its content (the commitment hash),
+so `reveal_block` would compare the evaluation's hash against the commitment's hash and
+always fail.
 
 ## How it works
 

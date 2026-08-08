@@ -6,15 +6,19 @@
   // declared (deploy fails with "Missing entry-point to Worker script
   // or to assets directory" otherwise; 2026-05-13 incident).
   //
-  // Mirrors the live worker's configuration as reported by the
-  // Cloudflare API (compatibility_date, flags, has_assets) — this file
-  // makes the implicit deployment shape explicit rather than changing
-  // it. The site remains a static-asset deploy on Workers; no SSR,
-  // no Workers Functions code.
+  // 2026-06-10 (launch hit-list 2.6a): added the worker entry for
+  // markdown content negotiation. The old Pages Function
+  // (functions/_middleware.ts) never executed on this static-asset
+  // deploy — the sidecars were built but unserved. `run_worker_first`
+  // is load-bearing: without it, requests matching an asset bypass the
+  // worker and negotiation silently dies again.
   "name": "synpareia",
   "compatibility_date": "2026-05-09",
   "compatibility_flags": ["global_fetch_strictly_public", "nodejs_compat"],
+  "main": "worker/index.ts",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
